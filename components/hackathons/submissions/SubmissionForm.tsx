@@ -1,5 +1,11 @@
 'use client';
-import React, { useState, useCallback, useEffect, useRef } from 'react';
+import React, {
+  useState,
+  useCallback,
+  useEffect,
+  useRef,
+  useMemo,
+} from 'react';
 import { useForm } from 'react-hook-form';
 import { cn } from '@/lib/utils';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -77,7 +83,7 @@ const teamMemberSchema = z
     path: ['email'],
   });
 
-const submissionSchema = z.object({
+const baseSubmissionSchema = z.object({
   projectName: z.string().min(3, 'Project name must be at least 3 characters'),
   category: z.string().min(1, 'Please select a category'),
   description: z.string().min(50, 'Description must be at least 50 characters'),
@@ -89,7 +95,7 @@ const submissionSchema = z.object({
   links: z.array(
     z.object({
       type: z.string(),
-      url: z.string().url('Please enter a valid URL'),
+      url: z.union([z.string().url('Please enter a valid URL'), z.literal('')]),
     })
   ),
   participationType: z.enum(['INDIVIDUAL', 'TEAM']),
@@ -97,7 +103,21 @@ const submissionSchema = z.object({
   teamMembers: z.array(teamMemberSchema).optional(),
 });
 
-type SubmissionFormDataLocal = z.infer<typeof submissionSchema>;
+const createSubmissionSchema = (requireDemoVideo: boolean) =>
+  requireDemoVideo
+    ? baseSubmissionSchema.refine(
+        data =>
+          data.videoUrl !== undefined &&
+          data.videoUrl !== null &&
+          String(data.videoUrl).trim() !== '',
+        {
+          message: 'Demo video URL is required for this hackathon',
+          path: ['videoUrl'],
+        }
+      )
+    : baseSubmissionSchema;
+
+type SubmissionFormDataLocal = z.infer<typeof baseSubmissionSchema>;
 
 interface SubmissionFormContentProps {
   hackathonSlugOrId: string;
@@ -138,6 +158,8 @@ const LINK_TYPES = [
   { value: 'other', label: 'Other' },
 ];
 
+const OTHER_LINK_TYPES = ['demo', 'website', 'documentation', 'other'];
+
 const CATEGORIES = [
   'Web Development',
   'Mobile App',
@@ -148,6 +170,16 @@ const CATEGORIES = [
   'Design',
   'Other',
 ];
+
+const isValidUrl = (url: string | undefined): boolean => {
+  if (!url || String(url).trim() === '') return false;
+  try {
+    const u = new URL(String(url).trim());
+    return u.protocol === 'http:' || u.protocol === 'https:';
+  } catch {
+    return false;
+  }
+};
 
 const isValidImageUrl = (url: string | undefined): boolean => {
   if (!url || url.trim() === '') return false;
@@ -170,6 +202,16 @@ const SubmissionFormContent: React.FC<SubmissionFormContentProps> = ({
   const { collapse, isExpanded: open } = useExpandableScreen();
   const { currentHackathon } = useHackathonData();
   const { user } = useAuthStatus();
+
+  const requireGithub = currentHackathon?.requireGithub ?? false;
+  const requireDemoVideo = currentHackathon?.requireDemoVideo ?? false;
+  const requireOtherLinks = currentHackathon?.requireOtherLinks ?? false;
+
+  const submissionSchema = useMemo(
+    () => createSubmissionSchema(requireDemoVideo),
+    [requireDemoVideo]
+  );
+
   const [currentStep, setCurrentStep] = useState(0);
   const [steps, setSteps] = useState<Step[]>(INITIAL_STEPS);
   const [logoPreview, setLogoPreview] = useState<string>('');
@@ -383,7 +425,30 @@ const SubmissionFormContent: React.FC<SubmissionFormContentProps> = ({
     });
   };
 
+  const canRemoveLink = (index: number): boolean => {
+    const links = form.getValues('links') || [];
+    const link = links[index];
+    if (!link) return true;
+
+    if (requireGithub && link.type === 'github') {
+      const otherGithubCount = links.filter(
+        (l, i) => i !== index && l.type === 'github'
+      ).length;
+      if (otherGithubCount === 0) return false;
+    }
+
+    if (requireOtherLinks && OTHER_LINK_TYPES.includes(link.type)) {
+      const otherLinkCount = links.filter(
+        (l, i) => i !== index && OTHER_LINK_TYPES.includes(l.type)
+      ).length;
+      if (otherLinkCount === 0) return false;
+    }
+
+    return true;
+  };
+
   const handleRemoveLink = (index: number) => {
+    if (!canRemoveLink(index)) return;
     const currentLinks = form.getValues('links') || [];
     form.setValue(
       'links',
@@ -403,7 +468,33 @@ const SubmissionFormContent: React.FC<SubmissionFormContentProps> = ({
     form.setValue('links', updatedLinks, { shouldValidate: true });
   };
 
+  // Team size configuration and computed state (only when hackathon defines limits)
+  const teamMin = currentHackathon?.teamMin;
+  const teamMax = currentHackathon?.teamMax;
+  const hasTeamLimits = teamMin !== undefined && teamMax !== undefined;
+  const watchedTeamMembers = form.watch('teamMembers');
+  const currentTeamSize = (watchedTeamMembers?.length ?? 0) + 1;
+  const isTeamAtCapacity = hasTeamLimits && currentTeamSize >= teamMax;
+  const isTeamBelowMinimum = hasTeamLimits && currentTeamSize < teamMin;
+  const membersNeededForMinimum = hasTeamLimits ? teamMin - currentTeamSize : 0;
+
+  function getTeamSizeBadgeStyle(): string {
+    if (isTeamAtCapacity) {
+      return 'border-yellow-500 bg-yellow-500/10 text-yellow-500';
+    }
+    if (isTeamBelowMinimum) {
+      return 'border-orange-500 bg-orange-500/10 text-orange-500';
+    }
+    return 'border-gray-600 text-gray-400';
+  }
+
   const handleAddInvitee = () => {
+    // Guard: prevent adding members when team is at capacity
+    if (isTeamAtCapacity) {
+      toast.error(`Team is at maximum capacity (${teamMax} members)`);
+      return;
+    }
+
     if (!currentInviteeName || !currentInviteeRole || !currentInviteeEmail) {
       toast.error('Please fill in name, email and role');
       return;
@@ -452,6 +543,14 @@ const SubmissionFormContent: React.FC<SubmissionFormContentProps> = ({
             form.setError('teamName', { message: 'Team Name is required' });
             return;
           }
+
+          if (isTeamBelowMinimum) {
+            toast.error(
+              `Your team needs at least ${teamMin} members. Please invite ${membersNeededForMinimum} more member${membersNeededForMinimum > 1 ? 's' : ''} to continue.`
+            );
+            return;
+          }
+
           isValid = true;
         }
       } else {
@@ -463,9 +562,48 @@ const SubmissionFormContent: React.FC<SubmissionFormContentProps> = ({
       const videoUrl = form.getValues('videoUrl');
       const links = form.getValues('links') || [];
 
-      if (videoUrl && videoUrl.trim() !== '') {
+      form.clearErrors(['videoUrl', 'links']);
+
+      if (requireDemoVideo) {
+        const videoTrimmed =
+          videoUrl !== undefined && videoUrl !== null
+            ? String(videoUrl).trim()
+            : '';
+        if (videoTrimmed === '') {
+          form.setError('videoUrl', {
+            message: 'Demo video URL is required for this hackathon',
+          });
+          return;
+        }
         const videoValid = await form.trigger('videoUrl');
         if (!videoValid) return;
+      } else if (videoUrl && String(videoUrl).trim() !== '') {
+        const videoValid = await form.trigger('videoUrl');
+        if (!videoValid) return;
+      }
+
+      const hasValidGithubLink = links.some(
+        link => link.type === 'github' && isValidUrl(link.url)
+      );
+
+      if (requireGithub && !hasValidGithubLink) {
+        form.setError('links', {
+          message:
+            'GitHub repository link is required for this hackathon. Please add your GitHub link.',
+        });
+        return;
+      }
+
+      const hasValidOtherLink = links.some(
+        link => OTHER_LINK_TYPES.includes(link.type) && isValidUrl(link.url)
+      );
+
+      if (requireOtherLinks && !hasValidOtherLink) {
+        form.setError('links', {
+          message:
+            'At least one additional link (Demo, Website, Documentation, or Other) is required for this hackathon.',
+        });
+        return;
       }
 
       if (links.length > 0) {
@@ -556,6 +694,61 @@ const SubmissionFormContent: React.FC<SubmissionFormContentProps> = ({
         toast.error('Please fill in all required fields');
         setCurrentStep(1);
         updateStepState(1, 'active');
+        return;
+      }
+
+      form.clearErrors(['videoUrl', 'links']);
+
+      if (requireDemoVideo) {
+        const videoVal = safeData.videoUrl ?? currentValues.videoUrl ?? '';
+        const videoTrimmed =
+          videoVal !== undefined && videoVal !== null
+            ? String(videoVal).trim()
+            : '';
+        if (videoTrimmed === '') {
+          form.setError('videoUrl', {
+            message: 'Demo video URL is required for this hackathon',
+          });
+          setCurrentStep(2);
+          updateStepState(2, 'active');
+          return;
+        }
+        const videoValid = await form.trigger('videoUrl');
+        if (!videoValid) {
+          setCurrentStep(2);
+          updateStepState(2, 'active');
+          return;
+        }
+      }
+
+      const rawLinks = data.links ?? currentValues.links ?? [];
+      const hasValidGithubLink = rawLinks.some(
+        (link: { type: string; url: string }) =>
+          link.type === 'github' && isValidUrl(link.url)
+      );
+
+      if (requireGithub && !hasValidGithubLink) {
+        form.setError('links', {
+          message:
+            'GitHub repository link is required for this hackathon. Please add your GitHub link.',
+        });
+        setCurrentStep(2);
+        updateStepState(2, 'active');
+        return;
+      }
+
+      const hasValidOtherLink = rawLinks.some(
+        (link: { type: string; url: string }) =>
+          OTHER_LINK_TYPES.includes(link.type) && isValidUrl(link.url)
+      );
+
+      if (requireOtherLinks && !hasValidOtherLink) {
+        form.setError('links', {
+          message:
+            'At least one additional link (Demo, Website, Documentation, or Other) is required for this hackathon.',
+        });
+        setCurrentStep(2);
+        updateStepState(2, 'active');
         return;
       }
 
@@ -757,7 +950,7 @@ const SubmissionFormContent: React.FC<SubmissionFormContentProps> = ({
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel className='text-white'>
-                            Team Name *
+                            Team Name <span className='text-red-400'>*</span>
                           </FormLabel>
                           <FormControl>
                             <Input
@@ -772,9 +965,35 @@ const SubmissionFormContent: React.FC<SubmissionFormContentProps> = ({
                     />
 
                     <div className='space-y-3'>
-                      <FormLabel className='text-white'>
-                        Invite Members (Optional)
-                      </FormLabel>
+                      <div className='flex items-center justify-between'>
+                        <FormLabel className='text-white'>
+                          Invite Members
+                          {hasTeamLimits && teamMin > 1 && (
+                            <span className='ml-1 text-xs text-gray-400'>
+                              (min {teamMin} members)
+                            </span>
+                          )}
+                        </FormLabel>
+                        {hasTeamLimits && (
+                          <Badge
+                            variant='outline'
+                            className={cn(
+                              'transition-colors',
+                              getTeamSizeBadgeStyle()
+                            )}
+                          >
+                            <Users className='mr-1 h-3 w-3' />
+                            {currentTeamSize} / {teamMax} members
+                          </Badge>
+                        )}
+                      </div>
+                      {isTeamBelowMinimum && (
+                        <p className='text-xs text-orange-400'>
+                          You need at least {membersNeededForMinimum} more
+                          member{membersNeededForMinimum > 1 ? 's' : ''} to
+                          proceed.
+                        </p>
+                      )}
                       <div className='flex flex-col gap-3'>
                         <div className='grid grid-cols-1 gap-3 md:grid-cols-3'>
                           <Input
@@ -784,6 +1003,7 @@ const SubmissionFormContent: React.FC<SubmissionFormContentProps> = ({
                               setCurrentInviteeName(e.target.value)
                             }
                             className='border-gray-700 bg-gray-800/50 text-white'
+                            disabled={isTeamAtCapacity}
                           />
                           <Input
                             placeholder='Email'
@@ -793,6 +1013,7 @@ const SubmissionFormContent: React.FC<SubmissionFormContentProps> = ({
                               setCurrentInviteeEmail(e.target.value)
                             }
                             className='border-gray-700 bg-gray-800/50 text-white'
+                            disabled={isTeamAtCapacity}
                           />
                           <Input
                             placeholder='Role (e.g. Designer)'
@@ -801,15 +1022,22 @@ const SubmissionFormContent: React.FC<SubmissionFormContentProps> = ({
                               setCurrentInviteeRole(e.target.value)
                             }
                             className='border-gray-700 bg-gray-800/50 text-white'
+                            disabled={isTeamAtCapacity}
                           />
                         </div>
                         <Button
                           type='button'
                           onClick={handleAddInvitee}
-                          className='self-start bg-gray-800 text-white hover:bg-gray-700'
+                          disabled={isTeamAtCapacity}
+                          className={cn(
+                            'self-start',
+                            isTeamAtCapacity
+                              ? 'cursor-not-allowed bg-gray-700 text-gray-500 opacity-50'
+                              : 'bg-gray-800 text-white hover:bg-gray-700'
+                          )}
                         >
                           <Plus className='mr-2 h-4 w-4' />
-                          Add Member
+                          {isTeamAtCapacity ? 'Team Full' : 'Add Member'}
                         </Button>
                       </div>
 
@@ -868,7 +1096,9 @@ const SubmissionFormContent: React.FC<SubmissionFormContentProps> = ({
               name='projectName'
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className='text-white'>Project Name *</FormLabel>
+                  <FormLabel className='text-white'>
+                    Project Name <span className='text-red-400'>*</span>
+                  </FormLabel>
                   <FormControl>
                     <Input
                       key='projectName-input'
@@ -891,7 +1121,9 @@ const SubmissionFormContent: React.FC<SubmissionFormContentProps> = ({
               name='category'
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className='text-white'>Category *</FormLabel>
+                  <FormLabel className='text-white'>
+                    Category <span className='text-red-400'>*</span>
+                  </FormLabel>
                   <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
                       <SelectTrigger className='border-gray-700 bg-gray-800/50 text-white'>
@@ -916,7 +1148,9 @@ const SubmissionFormContent: React.FC<SubmissionFormContentProps> = ({
               name='description'
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className='text-white'>Description *</FormLabel>
+                  <FormLabel className='text-white'>
+                    Description <span className='text-red-400'>*</span>
+                  </FormLabel>
                   <FormControl>
                     <Textarea
                       placeholder='Describe your project in detail (minimum 50 characters)'
@@ -937,6 +1171,12 @@ const SubmissionFormContent: React.FC<SubmissionFormContentProps> = ({
       case 2:
         return (
           <div key='step-2' className='space-y-6'>
+            {(requireGithub || requireDemoVideo || requireOtherLinks) && (
+              <p className='text-sm text-gray-400'>
+                <span className='text-red-400'>*</span> Required for this
+                hackathon
+              </p>
+            )}
             <FormField
               control={form.control}
               name='logo'
@@ -1010,7 +1250,12 @@ const SubmissionFormContent: React.FC<SubmissionFormContentProps> = ({
               name='videoUrl'
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className='text-white'>Demo Video URL</FormLabel>
+                  <FormLabel className='text-white'>
+                    Demo Video URL
+                    {requireDemoVideo && (
+                      <span className='text-red-400'> *</span>
+                    )}
+                  </FormLabel>
                   <FormControl>
                     <Input
                       key='videoUrl-input'
@@ -1024,7 +1269,9 @@ const SubmissionFormContent: React.FC<SubmissionFormContentProps> = ({
                     />
                   </FormControl>
                   <FormDescription className='text-gray-400'>
-                    Optional: Link to a demo video (YouTube, Vimeo, etc.)
+                    {requireDemoVideo
+                      ? 'Link to a demo video (YouTube, Vimeo, etc.) is required for this hackathon'
+                      : 'Optional: Link to a demo video (YouTube, Vimeo, etc.)'}
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
@@ -1052,68 +1299,96 @@ const SubmissionFormContent: React.FC<SubmissionFormContentProps> = ({
               )}
             />
 
-            <div className='space-y-4'>
-              <div className='flex items-center justify-between'>
-                <FormLabel className='text-white'>Project Links</FormLabel>
-                <Button
-                  type='button'
-                  variant='outline'
-                  size='sm'
-                  onClick={handleAddLink}
-                  className='border-gray-700 text-white hover:bg-gray-800'
-                >
-                  <Plus className='mr-2 h-4 w-4' />
-                  Add Link
-                </Button>
-              </div>
-
-              {formLinks.length === 0 ? (
-                <p className='text-sm text-gray-400'>
-                  No links added. Click "Add Link" to add project links.
-                </p>
-              ) : (
-                <div className='space-y-3'>
-                  {formLinks.map((link, index) => (
-                    <div key={index} className='flex gap-2'>
-                      <Select
-                        value={link.type}
-                        onValueChange={value =>
-                          handleLinkChange(index, 'type', value)
-                        }
-                      >
-                        <SelectTrigger className='w-[140px] border-gray-700 bg-gray-800/50 text-white'>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent className='border-gray-700 bg-gray-800 text-white'>
-                          {LINK_TYPES.map(type => (
-                            <SelectItem key={type.value} value={type.value}>
-                              {type.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <Input
-                        placeholder='https://...'
-                        value={link.url}
-                        onChange={e =>
-                          handleLinkChange(index, 'url', e.target.value)
-                        }
-                        className='flex-1 border-gray-700 bg-gray-800/50 text-white placeholder:text-gray-500'
-                      />
+            <FormField
+              control={form.control}
+              name='links'
+              render={() => (
+                <FormItem>
+                  <div className='space-y-4'>
+                    <div className='flex items-center justify-between'>
+                      <FormLabel className='text-white'>
+                        Project Links
+                        {(requireGithub || requireOtherLinks) && (
+                          <span className='text-red-400'> *</span>
+                        )}
+                      </FormLabel>
                       <Button
                         type='button'
-                        variant='ghost'
+                        variant='outline'
                         size='sm'
-                        onClick={() => handleRemoveLink(index)}
-                        className='text-red-400 hover:bg-red-500/20'
+                        onClick={handleAddLink}
+                        className='border-gray-700 text-white hover:bg-gray-800'
                       >
-                        <X className='h-4 w-4' />
+                        <Plus className='mr-2 h-4 w-4' />
+                        Add Link
                       </Button>
                     </div>
-                  ))}
-                </div>
+
+                    {(requireGithub || requireOtherLinks) && (
+                      <FormDescription className='text-gray-400'>
+                        {requireGithub && requireOtherLinks
+                          ? 'GitHub repository link and at least one additional link (Demo, Website, Documentation, or Other) are required for this hackathon.'
+                          : requireGithub
+                            ? 'GitHub repository link is required for this hackathon.'
+                            : 'At least one additional link (Demo, Website, Documentation, or Other) is required for this hackathon.'}
+                      </FormDescription>
+                    )}
+                    {formLinks.length === 0 ? (
+                      <p className='text-sm text-gray-400'>
+                        No links added. Click "Add Link" to add project links.
+                      </p>
+                    ) : (
+                      <div className='space-y-3'>
+                        {formLinks.map((link, index) => (
+                          <div key={index} className='flex gap-2'>
+                            <Select
+                              value={link.type}
+                              onValueChange={value =>
+                                handleLinkChange(index, 'type', value)
+                              }
+                            >
+                              <SelectTrigger className='w-[140px] border-gray-700 bg-gray-800/50 text-white'>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent className='border-gray-700 bg-gray-800 text-white'>
+                                {LINK_TYPES.map(type => (
+                                  <SelectItem
+                                    key={type.value}
+                                    value={type.value}
+                                  >
+                                    {type.label}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <Input
+                              placeholder='https://...'
+                              value={link.url}
+                              onChange={e =>
+                                handleLinkChange(index, 'url', e.target.value)
+                              }
+                              className='flex-1 border-gray-700 bg-gray-800/50 text-white placeholder:text-gray-500'
+                            />
+                            {canRemoveLink(index) && (
+                              <Button
+                                type='button'
+                                variant='ghost'
+                                size='sm'
+                                onClick={() => handleRemoveLink(index)}
+                                className='text-red-400 hover:bg-red-500/20'
+                              >
+                                <X className='h-4 w-4' />
+                              </Button>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  <FormMessage />
+                </FormItem>
               )}
-            </div>
+            />
           </div>
         );
 
