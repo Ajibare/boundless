@@ -83,6 +83,7 @@ const SubmissionTabContent: React.FC<SubmissionTabContentProps> = ({
     setSelectedSort,
     setSelectedCategory,
   } = useSubmissions();
+
   const { currentHackathon, loading: isHackathonDataLoading } =
     useHackathonData();
   const { status } = useHackathonStatus(
@@ -276,6 +277,7 @@ const SubmissionTabContent: React.FC<SubmissionTabContentProps> = ({
 
       {/* Submissions Grid with Create Button if no submission */}
       {!isLoadingMySubmission &&
+        !isHackathonDataLoading &&
         !mySubmission &&
         isAuthenticated &&
         isRegistered &&
