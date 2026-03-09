@@ -1,6 +1,6 @@
 'use client';
 
-import { use, useEffect } from 'react';
+import { use, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useHackathonData } from '@/lib/providers/hackathonProvider';
 import { useAuthStatus } from '@/hooks/use-auth';
@@ -70,13 +70,32 @@ export default function SubmitProjectPage({
     router.push(`/hackathons/${hackathonSlug}?tab=submission`);
   };
 
-  if (
-    isLoading ||
-    hackathonLoading ||
-    isLoadingMySubmission ||
-    !currentHackathon
-  ) {
+  const [hasInitialLoaded, setHasInitialLoaded] = useState(false);
+
+  useEffect(() => {
+    if (!isLoading && !hackathonLoading && !isLoadingMySubmission) {
+      setHasInitialLoaded(true);
+    }
+  }, [isLoading, hackathonLoading, isLoadingMySubmission]);
+
+  if (!hasInitialLoaded) {
     return <LoadingScreen />;
+  }
+
+  if (!currentHackathon) {
+    return (
+      <div className='flex min-h-screen flex-col items-center justify-center bg-black px-5 py-5 text-white'>
+        <h1 className='mb-4 text-2xl font-bold'>Hackathon Not Found</h1>
+        <Button
+          onClick={handleClose}
+          variant='ghost'
+          className='text-gray-400 hover:text-white'
+        >
+          <ArrowLeft className='mr-2 h-4 w-4' />
+          Go Back
+        </Button>
+      </div>
+    );
   }
 
   return (
@@ -107,6 +126,8 @@ export default function SubmitProjectPage({
                     introduction: mySubmission.introduction,
                     links: mySubmission.links,
                     participationType: (mySubmission as any).participationType,
+                    teamName: (mySubmission as any).teamName,
+                    teamMembers: (mySubmission as any).teamMembers,
                   }
                 : undefined
             }
