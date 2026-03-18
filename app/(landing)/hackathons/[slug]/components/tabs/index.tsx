@@ -91,7 +91,7 @@ const HackathonTabs = ({ sidebar }: HackathonTabsProps) => {
       {
         id: 'submissions',
         label: 'Submissions',
-        badge: submissions.filter(p => p.status === 'Approved').length,
+        badge: submissions.filter(p => p.status === 'SHORTLISTED').length,
       },
       {
         id: 'discussions',
