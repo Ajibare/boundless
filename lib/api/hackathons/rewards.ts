@@ -200,3 +200,27 @@ export const createWinnerMilestones = async (
   );
   return res.data;
 };
+/**
+ * Export hackathon data (organizer only)
+ * GET /api/organizations/:organizationId/hackathons/:id/export?format=csv|pdf&dataset=full|...
+ */
+export const exportHackathon = async (
+  organizationId: string,
+  hackathonId: string,
+  format: 'csv' | 'pdf',
+  dataset:
+    | 'overview'
+    | 'participants'
+    | 'submissions'
+    | 'prize_tiers'
+    | 'full' = 'full'
+): Promise<Blob> => {
+  const res = await api.get(
+    `/organizations/${organizationId}/hackathons/${hackathonId}/export`,
+    {
+      params: { format, dataset },
+      responseType: 'blob', // Important for binary data
+    }
+  );
+  return res.data;
+};
