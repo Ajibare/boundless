@@ -121,6 +121,7 @@ export interface PrizeTier {
 
 export interface HackathonRewards {
   prizeTiers: PrizeTier[];
+  winnerOverrides?: Record<string, number>; // submissionId -> rank
 }
 
 // Judging Tab Types
@@ -432,6 +433,7 @@ export type Hackathon = {
   publishedAt: string;
   createdAt: string;
   updatedAt: string;
+  winnerOverrides?: Record<string, number>; // Added for manual rank overrides
   participants: Participant[];
 
   _count: {
@@ -475,7 +477,9 @@ export interface PublishHackathonRequest extends Hackathon {
   escrowDetails?: object;
 }
 
-export type UpdateHackathonRequest = Partial<Hackathon>;
+export type UpdateHackathonRequest = Partial<Hackathon> & {
+  rewards?: HackathonRewards;
+};
 
 // Response Types
 export interface CreateDraftResponse extends ApiResponse<HackathonDraft> {
