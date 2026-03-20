@@ -2924,6 +2924,7 @@ export const toggleRoleHired = async (
 export interface HackathonWinner {
   rank: number;
   projectName: string;
+  logo: string;
   projectId?: string;
   teamName: string | null;
   participants: Array<{

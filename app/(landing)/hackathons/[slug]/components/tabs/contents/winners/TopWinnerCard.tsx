@@ -11,18 +11,18 @@ interface TopWinnerCardProps {
 }
 
 export const TopWinnerCard = ({ winner, submission }: TopWinnerCardProps) => {
-  const bannerUrl = submission?.logo || '/images/default-project-banner.png'; // Fallback to logo or default
+  const bannerUrl = winner?.logo || '/images/default-project-banner.png'; // Fallback to logo or default
 
   return (
     <div className='relative w-full overflow-hidden rounded-2xl border border-white/5 bg-[#0A0A0A] p-6 transition-all hover:border-white/10'>
       <div className='flex flex-col gap-8 md:flex-row'>
-        {/* Project Visual */}
         <div className='relative aspect-4/3 w-full shrink-0 overflow-hidden rounded-xl bg-linear-to-br from-indigo-500/20 to-purple-500/20 md:w-[240px] lg:w-[280px]'>
-          {submission?.logo ? (
+          {bannerUrl ? (
             <Image
-              src={submission.logo}
+              src={bannerUrl}
               alt={winner.projectName}
               fill
+              sizes='(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw'
               className='object-cover'
             />
           ) : (
@@ -32,7 +32,6 @@ export const TopWinnerCard = ({ winner, submission }: TopWinnerCardProps) => {
           )}
         </div>
 
-        {/* Project Info */}
         <div className='flex flex-1 flex-col py-1'>
           <div className='mb-6 flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between lg:mb-2'>
             <div className='space-y-1'>
