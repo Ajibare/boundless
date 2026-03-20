@@ -26,7 +26,9 @@ import {
 import { rewardsSchema, RewardsFormData } from './schemas/rewardsSchema';
 import {
   getFeeEstimate,
+  getFinancialPreview,
   type FeeEstimateData,
+  type FinancialPreviewData,
 } from '@/lib/api/hackathons/rewards';
 import { cn } from '@/lib/utils';
 import type { Control } from 'react-hook-form';
@@ -67,6 +69,9 @@ interface RewardsTabProps {
   onSave?: (data: RewardsFormData) => Promise<void>;
   initialData?: RewardsFormData;
   isLoading?: boolean;
+  /** Required to call the financial preview dry-run endpoint */
+  organizationId?: string;
+  hackathonId?: string;
 }
 
 const PRIZE_PRESETS = {
@@ -595,12 +600,19 @@ export default function RewardsTab({
   onContinue,
   initialData,
   isLoading = false,
+  organizationId,
+  hackathonId,
 }: RewardsTabProps) {
   const [showPresets, setShowPresets] = useState(false);
   const [pendingPreset, setPendingPreset] = useState<
     keyof typeof PRIZE_PRESETS | null
   >(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [previewData, setPreviewData] = useState<FinancialPreviewData | null>(
+    null
+  );
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [previewError, setPreviewError] = useState<string | null>(null);
 
   /** The amount that was already funded when this form was opened (for top-up delta). */
   const initialFundedAmount = useMemo(
@@ -835,14 +847,37 @@ export default function RewardsTab({
   };
 
   /**
-   * Called when Continue is clicked.
-   * Runs form validation; if it passes, opens the confirm dialog.
-   * If validation fails, react-hook-form will display inline errors as usual.
+   * Called when the action button is clicked.
+   * 1. Runs Zod validation — shows inline errors if invalid.
+   * 2. If valid and org/hackathon IDs are present, calls the dry-run preview endpoint.
+   * 3. Opens the confirm dialog (with live preview data if available).
    */
   const handleContinueClick = async () => {
     const isValid = await form.trigger();
-    if (isValid) {
-      setConfirmOpen(true);
+    if (!isValid) return;
+
+    // Reset preview state for this dialog open
+    setPreviewData(null);
+    setPreviewError(null);
+    setConfirmOpen(true);
+
+    if (organizationId && hackathonId) {
+      setPreviewLoading(true);
+      try {
+        const tiers = form.getValues('prizeTiers');
+        const data = await getFinancialPreview(organizationId, hackathonId, {
+          prizeTiers: tiers,
+        });
+        setPreviewData(data);
+      } catch (err: any) {
+        setPreviewError(
+          err?.response?.data?.message ||
+            err?.message ||
+            'Could not load cost preview. You can still proceed.'
+        );
+      } finally {
+        setPreviewLoading(false);
+      }
     }
   };
 
@@ -1041,7 +1076,7 @@ export default function RewardsTab({
 
       {/* ── Confirmation AlertDialog ── */}
       <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
-        <AlertDialogContent className='border-zinc-800 bg-zinc-950 text-white'>
+        <AlertDialogContent className='border-zinc-800 bg-zinc-950 text-white sm:max-w-lg'>
           <AlertDialogHeader>
             <div className='mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-orange-500/15'>
               <Wallet className='h-6 w-6 text-orange-400' />
@@ -1051,75 +1086,217 @@ export default function RewardsTab({
             </AlertDialogTitle>
             <AlertDialogDescription asChild>
               <div className='space-y-3 text-zinc-400'>
-                <p>
-                  You are about to lock{' '}
-                  <strong className='text-white'>
-                    {(() => {
-                      const hasExisting = initialFundedAmount > 0;
-                      const delta = totalPool - initialFundedAmount;
-                      const amt = hasExisting
-                        ? delta
-                        : (feeEstimate?.totalFunds ?? totalPool);
-                      return `$${amt.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 })} USDC`;
-                    })()}
-                  </strong>{' '}
-                  {initialFundedAmount > 0 ? '(top-up amount) ' : ''}into an
-                  escrow smart contract for this hackathon's prize pool.
-                </p>
-                <div className='rounded-lg border border-orange-500/20 bg-orange-500/10 p-3 text-sm text-orange-300'>
-                  <p className='font-semibold'>
-                    ⚠️ This action is irreversible
-                  </p>
-                  <p className='mt-1 text-orange-400/80'>
-                    Once confirmed, funds cannot be withdrawn without contacting
-                    support. Ensure your wallet has sufficient balance.
-                  </p>
-                </div>
-                <div className='rounded-lg border border-zinc-800 bg-zinc-900/50 p-3 text-sm'>
-                  <div className='flex items-center justify-between'>
-                    <span className='text-zinc-500'>Prize tiers</span>
-                    <span className='text-zinc-300'>{fields.length}</span>
+                {/* Loading state */}
+                {previewLoading && (
+                  <div className='flex items-center gap-2 rounded-lg border border-zinc-800 bg-zinc-900/50 p-4 text-sm text-zinc-400'>
+                    <Loader2 className='h-4 w-4 animate-spin text-zinc-500' />
+                    Calculating exact cost…
                   </div>
-                  <div className='mt-1.5 flex items-center justify-between'>
-                    <span className='text-zinc-500'>Total prize pool</span>
-                    <span className='text-zinc-300'>
-                      $
-                      {totalPool.toLocaleString('en-US', {
+                )}
+
+                {/* Error fallback — still lets user proceed */}
+                {previewError && !previewLoading && (
+                  <div className='rounded-lg border border-amber-500/20 bg-amber-500/10 p-3 text-sm text-amber-300'>
+                    <p className='font-semibold'>Preview unavailable</p>
+                    <p className='mt-0.5 text-xs text-amber-400/80'>
+                      {previewError}
+                    </p>
+                  </div>
+                )}
+
+                {/* Rich preview from dry-run endpoint */}
+                {previewData &&
+                  !previewLoading &&
+                  (() => {
+                    const fmt = (n: number) =>
+                      n.toLocaleString('en-US', {
                         minimumFractionDigits: 0,
                         maximumFractionDigits: 2,
-                      })}{' '}
-                      USDC
-                    </span>
-                  </div>
-                  {feeEstimate && (
-                    <div className='mt-1.5 flex items-center justify-between'>
-                      <span className='text-zinc-500'>
-                        {feeEstimate.feeLabel ?? 'Platform fee'}
-                      </span>
-                      <span className='text-zinc-300'>
-                        $
-                        {feeEstimate.feeAmount.toLocaleString('en-US', {
-                          minimumFractionDigits: 0,
-                          maximumFractionDigits: 2,
-                        })}{' '}
-                        USDC
-                      </span>
+                      });
+                    return (
+                      <>
+                        <p>
+                          You are about to{' '}
+                          {previewData.additionalFundingRequired > 0
+                            ? 'top up'
+                            : 'update'}{' '}
+                          your escrow by{' '}
+                          <strong className='text-white'>
+                            ${fmt(previewData.additionalFundingRequired)} USDC
+                          </strong>
+                          .
+                        </p>
+
+                        {/* Wallet sufficiency */}
+                        <div
+                          className={cn(
+                            'rounded-lg border p-3 text-sm',
+                            previewData.sufficient
+                              ? 'border-green-500/20 bg-green-500/10 text-green-300'
+                              : 'border-red-500/20 bg-red-500/10 text-red-300'
+                          )}
+                        >
+                          <div className='flex items-center justify-between'>
+                            <span>Wallet balance</span>
+                            <span className='font-semibold'>
+                              ${fmt(previewData.walletBalance)} USDC
+                            </span>
+                          </div>
+                          {!previewData.sufficient && (
+                            <p className='mt-1 text-xs text-red-400'>
+                              ⚠️ Shortfall of ${fmt(previewData.shortfall)} USDC
+                              — please top up your wallet before proceeding.
+                            </p>
+                          )}
+                        </div>
+
+                        {/* Irreversibility warning */}
+                        <div className='rounded-lg border border-orange-500/20 bg-orange-500/10 p-3 text-sm text-orange-300'>
+                          <p className='font-semibold'>
+                            ⚠️ This action is irreversible
+                          </p>
+                          <p className='mt-1 text-xs text-orange-400/80'>
+                            Once confirmed, funds move on-chain into escrow and
+                            cannot be withdrawn without contacting support.
+                          </p>
+                        </div>
+
+                        {/* Cost summary */}
+                        <div className='space-y-1.5 rounded-lg border border-zinc-800 bg-zinc-900/50 p-3 text-sm'>
+                          <div className='flex justify-between'>
+                            <span className='text-zinc-500'>Current pool</span>
+                            <span className='text-zinc-300'>
+                              ${fmt(previewData.currentPrizePool)} USDC
+                            </span>
+                          </div>
+                          <div className='flex justify-between'>
+                            <span className='text-zinc-500'>New pool</span>
+                            <span className='text-zinc-300'>
+                              ${fmt(previewData.newPrizePool)} USDC
+                            </span>
+                          </div>
+                          <div className='flex justify-between'>
+                            <span className='text-zinc-500'>
+                              New platform fee
+                            </span>
+                            <span className='text-zinc-300'>
+                              ${fmt(previewData.newPlatformFee)} USDC
+                            </span>
+                          </div>
+                          <div className='flex justify-between border-t border-zinc-800 pt-1.5 font-semibold'>
+                            <span className='text-zinc-400'>
+                              You'll pay now
+                            </span>
+                            <span className='text-white'>
+                              ${fmt(previewData.additionalFundingRequired)} USDC
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Per-tier breakdown */}
+                        {previewData.breakdown.length > 0 && (
+                          <div className='rounded-lg border border-zinc-800 bg-zinc-900/50 p-3 text-sm'>
+                            <p className='mb-2 text-xs font-semibold tracking-wide text-zinc-500 uppercase'>
+                              Per-tier breakdown
+                            </p>
+                            <div className='space-y-1'>
+                              {previewData.breakdown.map((tier, i) => (
+                                <div
+                                  key={i}
+                                  className='flex items-center justify-between text-xs'
+                                >
+                                  <span className='text-zinc-400'>
+                                    {tier.place}
+                                  </span>
+                                  <span className='text-zinc-300'>
+                                    ${fmt(tier.amount)} + ${fmt(tier.fee)} fee ={' '}
+                                    <strong>${fmt(tier.total)}</strong>
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </>
+                    );
+                  })()}
+
+                {/* Fallback when no org/hackathon IDs (creation flow) */}
+                {!organizationId && !previewLoading && !previewData && (
+                  <>
+                    <p>
+                      You are about to lock{' '}
+                      <strong className='text-white'>
+                        {(() => {
+                          const hasExisting = initialFundedAmount > 0;
+                          const delta = totalPool - initialFundedAmount;
+                          const amt = hasExisting
+                            ? delta
+                            : (feeEstimate?.totalFunds ?? totalPool);
+                          return `$${amt.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 })} USDC`;
+                        })()}
+                      </strong>{' '}
+                      {initialFundedAmount > 0 ? '(top-up) ' : ''}into escrow.
+                    </p>
+                    <div className='rounded-lg border border-orange-500/20 bg-orange-500/10 p-3 text-sm text-orange-300'>
+                      <p className='font-semibold'>
+                        ⚠️ This action is irreversible
+                      </p>
+                      <p className='mt-1 text-xs text-orange-400/80'>
+                        Once confirmed, funds move on-chain and cannot be
+                        withdrawn without contacting support. Ensure your wallet
+                        has sufficient balance.
+                      </p>
                     </div>
-                  )}
-                  {initialFundedAmount > 0 && (
-                    <div className='mt-1.5 flex items-center justify-between border-t border-zinc-800 pt-1.5'>
-                      <span className='text-zinc-500'>Already in escrow</span>
-                      <span className='text-zinc-300'>
-                        $
-                        {initialFundedAmount.toLocaleString('en-US', {
-                          minimumFractionDigits: 0,
-                          maximumFractionDigits: 2,
-                        })}{' '}
-                        USDC
-                      </span>
+                    <div className='space-y-1.5 rounded-lg border border-zinc-800 bg-zinc-900/50 p-3 text-sm'>
+                      <div className='flex justify-between'>
+                        <span className='text-zinc-500'>Prize tiers</span>
+                        <span className='text-zinc-300'>{fields.length}</span>
+                      </div>
+                      <div className='flex justify-between'>
+                        <span className='text-zinc-500'>Total prize pool</span>
+                        <span className='text-zinc-300'>
+                          $
+                          {totalPool.toLocaleString('en-US', {
+                            minimumFractionDigits: 0,
+                            maximumFractionDigits: 2,
+                          })}{' '}
+                          USDC
+                        </span>
+                      </div>
+                      {feeEstimate && (
+                        <div className='flex justify-between'>
+                          <span className='text-zinc-500'>
+                            {feeEstimate.feeLabel ?? 'Platform fee'}
+                          </span>
+                          <span className='text-zinc-300'>
+                            $
+                            {feeEstimate.feeAmount.toLocaleString('en-US', {
+                              minimumFractionDigits: 0,
+                              maximumFractionDigits: 2,
+                            })}{' '}
+                            USDC
+                          </span>
+                        </div>
+                      )}
+                      {initialFundedAmount > 0 && (
+                        <div className='flex justify-between border-t border-zinc-800 pt-1.5'>
+                          <span className='text-zinc-500'>
+                            Already in escrow
+                          </span>
+                          <span className='text-zinc-300'>
+                            $
+                            {initialFundedAmount.toLocaleString('en-US', {
+                              minimumFractionDigits: 0,
+                              maximumFractionDigits: 2,
+                            })}{' '}
+                            USDC
+                          </span>
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
+                  </>
+                )}
               </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -1128,14 +1305,22 @@ export default function RewardsTab({
               Cancel
             </AlertDialogCancel>
             <AlertDialogAction
+              disabled={previewData ? !previewData.sufficient : false}
               onClick={e => {
                 e.preventDefault();
                 setConfirmOpen(false);
                 handleConfirmedSubmit();
               }}
-              className='bg-orange-500 text-white hover:bg-orange-600'
+              className={cn(
+                'text-white',
+                previewData && !previewData.sufficient
+                  ? 'cursor-not-allowed bg-zinc-600 opacity-50'
+                  : 'bg-orange-500 hover:bg-orange-600'
+              )}
             >
-              Yes, lock funds
+              {previewData && !previewData.sufficient
+                ? 'Insufficient balance'
+                : 'Yes, lock funds'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
