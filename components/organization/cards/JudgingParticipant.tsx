@@ -239,7 +239,7 @@ const JudgingParticipant = ({
                 <span className='h-1 w-1 rounded-full bg-gray-700' />
                 <button
                   onClick={() => setShowBreakdown(!showBreakdown)}
-                  className='hover:text-primary flex items-center gap-1 text-xs text-white transition-colors'
+                  className='hover:text-primary text-primary flex items-center gap-1 text-xs transition-colors'
                 >
                   {localAverageScore !== null ? (
                     <>Score: {Number(localAverageScore).toFixed(1)}</>

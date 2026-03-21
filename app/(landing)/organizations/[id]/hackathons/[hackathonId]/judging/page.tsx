@@ -103,8 +103,10 @@ export default function JudgingPage() {
     'date'
   );
   const [viewMode, setViewMode] = useState<'detailed' | 'compact'>('detailed');
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
+  const [submissionsPage, setSubmissionsPage] = useState(1);
+  const [submissionsTotalPages, setSubmissionsTotalPages] = useState(1);
+  const [resultsPage, setResultsPage] = useState(1);
+  const [resultsTotalPages, setResultsTotalPages] = useState(1);
   const [isFetchingSubmissions, setIsFetchingSubmissions] = useState(false);
 
   // Debounce search term
@@ -235,7 +237,7 @@ export default function JudgingPage() {
         const res = await getJudgingResults(
           organizationId,
           hackathonId,
-          currentPage,
+          resultsPage,
           10,
           submissionSearchTerm,
           sortBy,
@@ -247,7 +249,7 @@ export default function JudgingPage() {
           setJudgingSummary(res.data);
 
           if (res.data.pagination?.totalPages) {
-            setTotalPages(res.data.pagination.totalPages);
+            setResultsTotalPages(res.data.pagination.totalPages);
           }
 
           lastFetchedRef.current['results'] = now;
@@ -277,7 +279,7 @@ export default function JudgingPage() {
         setIsFetchingResults(false);
       }
     },
-    [organizationId, hackathonId]
+    [organizationId, hackathonId, resultsPage, submissionSearchTerm, sortBy]
   );
 
   const fetchWinners = useCallback(
@@ -319,7 +321,7 @@ export default function JudgingPage() {
         setIsFetchingWinners(false);
       }
     },
-    [organizationId, hackathonId]
+    [organizationId, hackathonId, submissionSearchTerm]
   );
 
   const fetchData = useCallback(async () => {
@@ -334,7 +336,7 @@ export default function JudgingPage() {
       // Use the new optimized endpoint that returns submissions, criteria and myScore in one go
       const submissionsRes = await getJudgingSubmissionsForJudge(
         hackathonId,
-        currentPage,
+        submissionsPage,
         12,
         submissionSearchTerm,
         sortBy,
@@ -357,9 +359,9 @@ export default function JudgingPage() {
         setCriteria(critData || []);
 
         if (pagination?.totalPages) {
-          setTotalPages(pagination.totalPages);
+          setSubmissionsTotalPages(pagination.totalPages);
         } else if (pagination?.total) {
-          setTotalPages(Math.ceil(pagination.total / 12));
+          setSubmissionsTotalPages(Math.ceil(pagination.total / 12));
         }
       } else {
         setSubmissions([]);
@@ -379,7 +381,7 @@ export default function JudgingPage() {
   }, [
     organizationId,
     hackathonId,
-    currentPage,
+    submissionsPage,
     submissionSearchTerm,
     fetchJudges,
     fetchResults,
@@ -449,8 +451,14 @@ export default function JudgingPage() {
   const filteredAndSortedSubmissions = submissions;
 
   const handlePageChange = (newPage: number) => {
-    if (newPage >= 1 && newPage <= totalPages) {
-      setCurrentPage(newPage);
+    if (activeTab === 'overview') {
+      if (newPage >= 1 && newPage <= submissionsTotalPages) {
+        setSubmissionsPage(newPage);
+      }
+    } else if (activeTab === 'results') {
+      if (newPage >= 1 && newPage <= resultsTotalPages) {
+        setResultsPage(newPage);
+      }
     }
   };
 
@@ -530,8 +538,8 @@ export default function JudgingPage() {
             />
             <MetricsCard
               title='Graded / Shortlisted'
-              value={`${gradedCount} / ${submissions.length}`}
-              subtitle={`${submissions.length > 0 ? Math.round((gradedCount / submissions.length) * 100) : 0}% Completion`}
+              value={`${gradedCount} / ${totalPossibleSubmissions}`}
+              subtitle={`${totalPossibleSubmissions > 0 ? Math.round((gradedCount / totalPossibleSubmissions) * 100) : 0}% Completion`}
               // icon={<Star className='h-4 w-4 text-amber-400' />}
               className='min-w-[200px] border-gray-900 bg-white/5'
             />
@@ -555,6 +563,7 @@ export default function JudgingPage() {
             onValueChange={value => {
               setActiveTab(value);
               if (value === 'results') {
+                setSortBy('score'); // Show auto-rank by default
                 fetchResults(false);
                 fetchWinners(false);
               }
@@ -604,7 +613,8 @@ export default function JudgingPage() {
                       value={searchQuery}
                       onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                         setSearchQuery(e.target.value);
-                        setCurrentPage(1);
+                        if (activeTab === 'overview') setSubmissionsPage(1);
+                        if (activeTab === 'results') setResultsPage(1);
                       }}
                     />
                   </div>
@@ -616,7 +626,8 @@ export default function JudgingPage() {
                         value={sortBy}
                         onValueChange={(value: any) => {
                           setSortBy(value);
-                          setCurrentPage(1);
+                          if (activeTab === 'overview') setSubmissionsPage(1);
+                          if (activeTab === 'results') setResultsPage(1);
                         }}
                       >
                         <SelectTrigger className='h-9 w-[130px] border-gray-900 bg-black text-xs'>
@@ -698,26 +709,28 @@ export default function JudgingPage() {
                   </div>
 
                   {/* Pagination Controls */}
-                  {totalPages > 1 && (
+                  {submissionsTotalPages > 1 && (
                     <div className='mt-8 flex items-center justify-center gap-4'>
                       <Button
                         variant='outline'
                         size='sm'
-                        disabled={currentPage === 1 || isLoading}
-                        onClick={() => handlePageChange(currentPage - 1)}
+                        disabled={submissionsPage === 1 || isLoading}
+                        onClick={() => handlePageChange(submissionsPage - 1)}
                         className='border-gray-900 bg-black hover:bg-white/5'
                       >
                         <ChevronLeft className='mr-1 h-4 w-4' />
                         Previous
                       </Button>
                       <span className='text-sm text-gray-500'>
-                        Page {currentPage} of {totalPages}
+                        Page {submissionsPage} of {submissionsTotalPages}
                       </span>
                       <Button
                         variant='outline'
                         size='sm'
-                        disabled={currentPage === totalPages || isLoading}
-                        onClick={() => handlePageChange(currentPage + 1)}
+                        disabled={
+                          submissionsPage === submissionsTotalPages || isLoading
+                        }
+                        onClick={() => handlePageChange(submissionsPage + 1)}
                         className='border-gray-900 bg-black hover:bg-white/5'
                       >
                         Next
@@ -991,28 +1004,29 @@ export default function JudgingPage() {
                       />
 
                       {/* Pagination Controls for Results */}
-                      {totalPages > 1 && (
+                      {resultsTotalPages > 1 && (
                         <div className='mt-8 flex items-center justify-center gap-4'>
                           <Button
                             variant='outline'
                             size='sm'
-                            disabled={currentPage === 1 || isFetchingResults}
-                            onClick={() => handlePageChange(currentPage - 1)}
+                            disabled={resultsPage === 1 || isFetchingResults}
+                            onClick={() => handlePageChange(resultsPage - 1)}
                             className='border-gray-900 bg-black hover:bg-white/5'
                           >
                             <ChevronLeft className='mr-1 h-4 w-4' />
                             Previous
                           </Button>
                           <span className='text-sm text-gray-500'>
-                            Page {currentPage} of {totalPages}
+                            Page {resultsPage} of {resultsTotalPages}
                           </span>
                           <Button
                             variant='outline'
                             size='sm'
                             disabled={
-                              currentPage === totalPages || isFetchingResults
+                              resultsPage === resultsTotalPages ||
+                              isFetchingResults
                             }
-                            onClick={() => handlePageChange(currentPage + 1)}
+                            onClick={() => handlePageChange(resultsPage + 1)}
                             className='border-gray-900 bg-black hover:bg-white/5'
                           >
                             Next
