@@ -169,8 +169,21 @@ const JudgingResultsTable = ({
                 >
                   <TableCell className='font-medium text-white'>
                     <div className='flex items-center gap-2'>
-                      {getRankIcon(index)}
-                      <span>#{result.rank ?? index + 1}</span>
+                      {getRankIcon(result.rank ? result.rank - 1 : index)}
+                      <div className='flex flex-col'>
+                        {result.rank ? (
+                          <span className='text-[10px] tracking-wider text-amber-500/70 uppercase'>
+                            Final
+                          </span>
+                        ) : (
+                          <span className='text-[10px] tracking-wider text-gray-500 uppercase'>
+                            Auto
+                          </span>
+                        )}
+                        <span className='text-sm font-bold'>
+                          #{result.rank ?? result.computedRank ?? index + 1}
+                        </span>
+                      </div>
                     </div>
                   </TableCell>
                   <TableCell className='font-medium text-white'>

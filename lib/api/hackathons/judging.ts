@@ -77,6 +77,7 @@ export interface JudgingResult {
     variance: number;
   }>;
   rank: number;
+  computedRank?: number;
   isComplete: boolean;
   isPending: boolean;
   hasDisagreement: boolean;
