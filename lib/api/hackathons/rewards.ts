@@ -181,7 +181,7 @@ export const getHackathonEscrow = async (
   hackathonId: string
 ): Promise<GetHackathonEscrowResponse> => {
   const res = await api.get(
-    `/organizations/${organizationId}/hackathons/${hackathonId}/escrow`
+    `/organizations/${organizationId}/hackathons/${hackathonId}/rewards/escrow`
   );
   return res.data;
 };
