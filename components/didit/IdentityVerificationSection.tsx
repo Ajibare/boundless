@@ -96,7 +96,7 @@ export function IdentityVerificationSection({
           </p>
         )}
 
-        {status !== 'Approved' && status !== 'In Review' && (
+        {user && status !== 'Approved' && status !== 'In Review' && (
           <>
             <DiditVerifyButton />
             {isLocalhost() && (
