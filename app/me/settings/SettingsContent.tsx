@@ -11,7 +11,6 @@ import Settings from '@/components/profile/update/Settings';
 import TwoFactorTab from '@/components/profile/update/TwoFactorTab';
 import SecurityTab from '@/components/profile/update/SecurityTab';
 import { IdentityVerificationSection } from '@/components/didit/IdentityVerificationSection';
-import { invalidateAuthProfileCache } from '@/hooks/use-auth';
 import { useRef } from 'react';
 import { Loader2 } from 'lucide-react';
 
@@ -41,11 +40,6 @@ const SettingsContent = () => {
       setIsLoading(true);
     }
     fetchUserData();
-  }, [fetchUserData]);
-
-  const handleVerificationComplete = useCallback(async () => {
-    await fetchUserData();
-    invalidateAuthProfileCache();
   }, [fetchUserData]);
 
   // Only show skeleton on first load — not on background refetches
@@ -170,10 +164,7 @@ const SettingsContent = () => {
             )}
           </TabsContent>
           <TabsContent value='identity' className='space-y-6'>
-            <IdentityVerificationSection
-              user={userData}
-              onVerificationComplete={handleVerificationComplete}
-            />
+            <IdentityVerificationSection user={userData} />
           </TabsContent>
         </Tabs>
       </div>

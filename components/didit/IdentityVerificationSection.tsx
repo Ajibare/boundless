@@ -22,7 +22,6 @@ export type IdentityVerificationStatus =
 
 export interface IdentityVerificationSectionProps {
   user: GetMeResponse | null;
-  onVerificationComplete?: () => void;
 }
 
 const statusConfig: Record<
@@ -53,7 +52,6 @@ const isLocalhost = (): boolean =>
 
 export function IdentityVerificationSection({
   user,
-  onVerificationComplete,
 }: IdentityVerificationSectionProps) {
   const status = user?.user
     ?.identityVerificationStatus as IdentityVerificationStatus;
@@ -100,11 +98,7 @@ export function IdentityVerificationSection({
 
         {(status !== 'Approved' || !status) && (
           <>
-            <DiditVerifyButton
-              onSuccess={() => {
-                onVerificationComplete?.();
-              }}
-            />
+            <DiditVerifyButton />
             {isLocalhost() && (
               <p className='rounded-md border border-zinc-700 bg-zinc-800/50 px-3 py-2 text-xs text-zinc-500'>
                 Using localhost? If verification is blocked by the browser, use
