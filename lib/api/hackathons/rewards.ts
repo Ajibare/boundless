@@ -213,6 +213,7 @@ export const exportHackathon = async (
     | 'participants'
     | 'submissions'
     | 'prize_tiers'
+    | 'winners'
     | 'full' = 'full'
 ): Promise<Blob> => {
   const res = await api.get(
