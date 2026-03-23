@@ -30,28 +30,6 @@ export function DiditVerifyButton({
     setLoading(true);
     setError(null);
     try {
-      // Request camera permission upfront so the browser has already granted it
-      // before the Didit SDK iframe tries to access it. Without this, users who
-      // have already granted permission still see camera access prompts/errors
-      // because the iframe cannot inherit the permission from the parent origin.
-      if (
-        typeof navigator !== 'undefined' &&
-        navigator.mediaDevices?.getUserMedia
-      ) {
-        try {
-          const stream = await navigator.mediaDevices.getUserMedia({
-            video: true,
-          });
-          stream.getTracks().forEach(track => track.stop());
-        } catch {
-          setError(
-            'Camera access is required for identity verification. Please allow camera access in your browser and try again.'
-          );
-          setLoading(false);
-          return;
-        }
-      }
-
       const { session_token, verification_url } = await createDiditSession(
         userId != null ? { user_id: userId } : undefined
       );
@@ -81,7 +59,23 @@ export function DiditVerifyButton({
         }
       };
 
+      // Patch the allow attribute on the iframe the SDK injects so the browser
+      // presents the camera/mic permission prompt naturally inside the iframe.
+      const observer = new MutationObserver(mutations => {
+        for (const mutation of mutations) {
+          for (const node of mutation.addedNodes) {
+            if (node instanceof HTMLIFrameElement) {
+              node.allow =
+                'camera; microphone; fullscreen; autoplay; encrypted-media';
+              observer.disconnect();
+            }
+          }
+        }
+      });
+      observer.observe(document.body, { childList: true, subtree: true });
+
       await sdk.startVerification({ url: verification_url });
+      observer.disconnect();
     } catch (e) {
       const message =
         e instanceof Error ? e.message : 'Failed to start verification';
