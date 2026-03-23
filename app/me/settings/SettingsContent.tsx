@@ -3,6 +3,7 @@ import Profile from '@/components/profile/update/Profile';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useEffect, useState, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
+import { VerificationSubmittedModal } from '@/components/didit/VerificationSubmittedModal';
 import { User } from '@/types/user';
 import { getMe } from '@/lib/api/auth';
 import { GetMeResponse } from '@/lib/api/types';
@@ -19,6 +20,8 @@ const SettingsContent = () => {
   const fromVerification = searchParams.get('verification') === 'complete';
   const [userData, setUserData] = useState<GetMeResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [showVerificationModal, setShowVerificationModal] =
+    useState(fromVerification);
   // Prevent unmounting tabs on background refetches (e.g. after 2FA enable)
   const hasLoadedOnce = useRef(false);
 
@@ -52,6 +55,10 @@ const SettingsContent = () => {
   }
   return (
     <div className='p-10'>
+      <VerificationSubmittedModal
+        open={showVerificationModal}
+        onClose={() => setShowVerificationModal(false)}
+      />
       <div className=''>
         {/* Header */}
         <div className='mb-8'>
