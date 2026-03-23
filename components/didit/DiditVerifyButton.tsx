@@ -30,6 +30,28 @@ export function DiditVerifyButton({
     setLoading(true);
     setError(null);
     try {
+      // Request camera permission upfront so the browser has already granted it
+      // before the Didit SDK iframe tries to access it. Without this, users who
+      // have already granted permission still see camera access prompts/errors
+      // because the iframe cannot inherit the permission from the parent origin.
+      if (
+        typeof navigator !== 'undefined' &&
+        navigator.mediaDevices?.getUserMedia
+      ) {
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({
+            video: true,
+          });
+          stream.getTracks().forEach(track => track.stop());
+        } catch {
+          setError(
+            'Camera access is required for identity verification. Please allow camera access in your browser and try again.'
+          );
+          setLoading(false);
+          return;
+        }
+      }
+
       const { session_token, verification_url } = await createDiditSession(
         userId != null ? { user_id: userId } : undefined
       );
