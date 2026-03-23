@@ -45,6 +45,11 @@ const DATASETS = [
     description: 'Project links & scores',
   },
   { id: 'prize_tiers', label: 'Prize Tiers', description: 'Rewards & logic' },
+  {
+    id: 'winners',
+    label: 'Winners',
+    description: 'Wallet address, activation & USDC trustline',
+  },
 ] as const;
 
 export function ExportButton({
