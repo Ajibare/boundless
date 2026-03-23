@@ -81,7 +81,23 @@ export function DiditVerifyButton({
         }
       };
 
+      // Patch the allow attribute on the iframe the SDK injects so the browser
+      // presents the camera/mic permission prompt naturally inside the iframe.
+      const observer = new MutationObserver(mutations => {
+        for (const mutation of mutations) {
+          for (const node of mutation.addedNodes) {
+            if (node instanceof HTMLIFrameElement) {
+              node.allow =
+                'camera; microphone; fullscreen; autoplay; encrypted-media';
+              observer.disconnect();
+            }
+          }
+        }
+      });
+      observer.observe(document.body, { childList: true, subtree: true });
+
       await sdk.startVerification({ url: verification_url });
+      observer.disconnect();
     } catch (e) {
       const message =
         e instanceof Error ? e.message : 'Failed to start verification';
