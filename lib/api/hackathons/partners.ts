@@ -44,6 +44,8 @@ export interface AllocationSummary {
   allocatableAmount: string;
   allocatedAmount: string;
   unallocatedAmount: string;
+  /** Trustless Work platform fee rate as a decimal (e.g. 0.05 = 5%). */
+  escrowFeeRate?: number;
   isFullyAllocated: boolean;
   requiresAllocation: boolean;
 }
@@ -80,6 +82,8 @@ export interface ContributionAllocationDetail {
   allocatableAmount: string;
   allocatedAmount: string;
   unallocatedAmount: string;
+  /** Trustless Work platform fee rate as a decimal (e.g. 0.05 = 5%). */
+  escrowFeeRate?: number;
   isFullyAllocated: boolean;
   allocations: AllocationRecord[];
 }

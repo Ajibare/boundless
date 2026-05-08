@@ -275,7 +275,11 @@ export default function AllocateContributionModal({
               <SummaryCell
                 label='Allocatable'
                 value={`${formatAmount(detail.allocatableAmount)} ${contribution.currency}`}
-                hint='after Trustless Work fee'
+                hint={
+                  typeof detail.escrowFeeRate === 'number'
+                    ? `after ${(detail.escrowFeeRate * 100).toFixed(2)}% platform fee`
+                    : 'after platform fee'
+                }
               />
               <SummaryCell
                 label='Remaining'
