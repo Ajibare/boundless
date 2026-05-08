@@ -1231,10 +1231,12 @@ export const updateDraftStep = async (
  */
 export const publishDraft = async (
   draftId: string,
-  organizationId: string
+  organizationId: string,
+  options?: { skipAnnouncement?: boolean; announcementSubject?: string }
 ): Promise<PublishHackathonResponse> => {
   const res = await api.put<ApiResponse<PublishHackathonResponse>>(
-    `/organizations/${organizationId}/hackathons/draft/${draftId}/publish`
+    `/organizations/${organizationId}/hackathons/draft/${draftId}/publish`,
+    options ?? {}
   );
 
   return res.data as unknown as PublishHackathonResponse;
