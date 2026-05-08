@@ -278,7 +278,12 @@ export const transformFromApiFormat = (draft: HackathonDraft) => {
       discord: collaboration?.discord || '',
       socialLinks: collaboration?.socialLinks || [],
       sponsorsPartners:
-        collaboration?.sponsorsPartners?.map(sp => ({
+        collaboration?.sponsorsPartners?.map((sp, i) => ({
+          id:
+            (sp as { id?: string }).id ||
+            (typeof crypto !== 'undefined' && 'randomUUID' in crypto
+              ? crypto.randomUUID()
+              : `sponsor-${Date.now()}-${i}`),
           name: sp.sponsorName,
           logo: sp.sponsorLogo,
           link: sp.partnerLink,
