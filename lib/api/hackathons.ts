@@ -139,9 +139,16 @@ export interface HackathonJudging {
 
 // Collaboration Tab Types
 export interface SponsorPartner {
-  sponsorName: string;
-  sponsorLogo: string;
-  partnerLink: string;
+  id?: string;
+  name?: string;
+  logo?: string;
+  link?: string;
+  /** @deprecated legacy field name retained for read-side compatibility. */
+  sponsorName?: string;
+  /** @deprecated legacy field name retained for read-side compatibility. */
+  sponsorLogo?: string;
+  /** @deprecated legacy field name retained for read-side compatibility. */
+  partnerLink?: string;
 }
 
 export interface HackathonCollaboration {
@@ -2552,6 +2559,9 @@ export type GetInvitationsResponse =
 export interface InvitationResponse extends ApiResponse<{
   message: string;
   teamId: string;
+  /** True when accepting also enrolled the invitee in the hackathon. */
+  autoEnrolled?: boolean;
+  hackathon?: { id: string; name: string };
   invitation: TeamInvitation;
 }> {
   success: true;

@@ -143,9 +143,10 @@ export const transformToApiFormat = (stepData: {
         collaboration?.sponsorsPartners
           ?.filter(sp => sp.name) // Filter out sponsors without names
           .map(sp => ({
-            sponsorName: sp.name || '',
-            sponsorLogo: sp.logo || '',
-            partnerLink: sp.link || '',
+            id: sp.id,
+            name: sp.name || '',
+            logo: sp.logo || '',
+            link: sp.link || '',
           })) || [],
     },
   };
@@ -280,13 +281,13 @@ export const transformFromApiFormat = (draft: HackathonDraft) => {
       sponsorsPartners:
         collaboration?.sponsorsPartners?.map((sp, i) => ({
           id:
-            (sp as { id?: string }).id ||
+            sp.id ||
             (typeof crypto !== 'undefined' && 'randomUUID' in crypto
               ? crypto.randomUUID()
               : `sponsor-${Date.now()}-${i}`),
-          name: sp.sponsorName,
-          logo: sp.sponsorLogo,
-          link: sp.partnerLink,
+          name: sp.name ?? sp.sponsorName ?? '',
+          logo: sp.logo ?? sp.sponsorLogo ?? '',
+          link: sp.link ?? sp.partnerLink ?? '',
         })) || [],
     } as CollaborationFormData,
   };
