@@ -13,15 +13,6 @@ interface SponsorsSectionProps {
   marketingPartners?: SponsorPartner[] | null;
 }
 
-const formatAmount = (raw: string) => {
-  const value = parseFloat(raw);
-  if (Number.isNaN(value)) return raw;
-  return value.toLocaleString(undefined, {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 2,
-  });
-};
-
 interface PartnerCardProps {
   name: string;
   logo?: string | null;
@@ -119,11 +110,8 @@ export default function SponsorsSection({
               </p>
             </div>
             <div className='text-right'>
-              <div className='font-mono text-2xl font-bold text-white'>
-                +{formatAmount(data.totalConfirmedAmount)} {data.currency}
-              </div>
-              <div className='text-xs text-gray-500'>
-                from {data.totalConfirmedCount}{' '}
+              <div className='text-sm text-gray-400'>
+                {data.totalConfirmedCount}{' '}
                 {data.totalConfirmedCount === 1 ? 'partner' : 'partners'}
               </div>
             </div>
@@ -136,11 +124,6 @@ export default function SponsorsSection({
                 name={c.partnerName}
                 logo={c.partnerLogo}
                 link={c.partnerLink}
-                meta={
-                  <>
-                    {formatAmount(c.pledgedAmount)} {c.currency}
-                  </>
-                }
               />
             ))}
           </div>
