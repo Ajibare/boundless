@@ -156,6 +156,7 @@ export default function SubmitProjectPage({
                       category: mySubmission.category,
                       description: mySubmission.description,
                       logo: mySubmission.logo,
+                      banner: mySubmission.banner,
                       videoUrl: mySubmission.videoUrl,
                       introduction: mySubmission.introduction,
                       links: mySubmission.links,

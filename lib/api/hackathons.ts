@@ -702,6 +702,7 @@ export interface ParticipantSubmission {
   category: string;
   description: string;
   logo?: string;
+  banner?: string;
   videoUrl?: string;
   introduction?: string;
   links?: Array<{ type: string; url: string }>;
