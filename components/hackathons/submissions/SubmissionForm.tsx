@@ -92,7 +92,10 @@ const baseSubmissionSchema = z.object({
   videoUrl: z
     .union([z.string().url('Please enter a valid URL'), z.literal('')])
     .optional(),
-  introduction: z.string().optional(),
+  introduction: z
+    .string()
+    .max(500, 'Introduction cannot exceed 500 characters')
+    .optional(),
   links: z.array(
     z.object({
       type: z.string(),
@@ -155,12 +158,18 @@ const INITIAL_STEPS: Step[] = [
 const LINK_TYPES = [
   { value: 'github', label: 'GitHub' },
   { value: 'demo', label: 'Demo' },
-  { value: 'website', label: 'Website' },
-  { value: 'documentation', label: 'Documentation' },
+  { value: 'video', label: 'Video' },
+  { value: 'document', label: 'Document' },
+  { value: 'presentation', label: 'Presentation' },
   { value: 'other', label: 'Other' },
 ];
 
-const OTHER_LINK_TYPES = ['demo', 'website', 'documentation', 'other'];
+const OTHER_LINK_TYPES = ['demo', 'video', 'document', 'presentation', 'other'];
+
+const MAX_OTHER_LINKS = 5;
+const FIXED_LINK_TYPES = LINK_TYPES.map(t => t.value).filter(
+  v => v !== 'other'
+);
 
 const isValidUrl = (url: string | undefined): boolean => {
   if (!url || String(url).trim() === '') return false;
@@ -517,6 +526,9 @@ const SubmissionFormContent: React.FC<SubmissionFormContentProps> = ({
   };
 
   const handleFillMockData = () => {
+    const participationType: 'INDIVIDUAL' | 'TEAM' = myTeam
+      ? 'TEAM'
+      : 'INDIVIDUAL';
     const mockData = {
       projectName: 'AI-Powered Task Manager',
       category: categoryOptions[0],
@@ -529,7 +541,7 @@ const SubmissionFormContent: React.FC<SubmissionFormContentProps> = ({
         { type: 'github', url: 'https://github.com/example/ai-task-manager' },
         { type: 'demo', url: 'https://demo.example.com/ai-task-manager' },
       ],
-      participationType: 'INDIVIDUAL' as const,
+      participationType,
     };
 
     form.reset(mockData);
@@ -539,7 +551,27 @@ const SubmissionFormContent: React.FC<SubmissionFormContentProps> = ({
 
   const handleAddLink = () => {
     const currentLinks = form.getValues('links') || [];
-    form.setValue('links', [...currentLinks, { type: 'github', url: '' }], {
+    const usedFixedTypes = new Set(
+      currentLinks.map(l => l.type).filter(t => t !== 'other')
+    );
+    const otherCount = currentLinks.filter(l => l.type === 'other').length;
+
+    const firstUnusedFixed = FIXED_LINK_TYPES.find(t => !usedFixedTypes.has(t));
+
+    let nextType: string;
+    if (firstUnusedFixed) {
+      nextType = firstUnusedFixed;
+    } else if (otherCount < MAX_OTHER_LINKS) {
+      nextType = 'other';
+    } else {
+      toast.error('Cannot add another link', {
+        description: `All fixed link types are used and you have reached the limit of ${MAX_OTHER_LINKS} "Other" links.`,
+        duration: 6000,
+      });
+      return;
+    }
+
+    form.setValue('links', [...currentLinks, { type: nextType, url: '' }], {
       shouldValidate: false,
     });
   };
@@ -582,6 +614,33 @@ const SubmissionFormContent: React.FC<SubmissionFormContentProps> = ({
     value: string
   ) => {
     const currentLinks = form.getValues('links') || [];
+
+    if (field === 'type') {
+      if (value !== 'other') {
+        const isDuplicate = currentLinks.some(
+          (l, i) => i !== index && l.type === value
+        );
+        if (isDuplicate) {
+          toast.error('Duplicate link type', {
+            description: `"${value}" is already used. Each link type can be used at most once. Choose "Other" for additional links.`,
+            duration: 6000,
+          });
+          return;
+        }
+      } else {
+        const otherCount = currentLinks.filter(
+          (l, i) => i !== index && l.type === 'other'
+        ).length;
+        if (otherCount >= MAX_OTHER_LINKS) {
+          toast.error('Too many "Other" links', {
+            description: `You can include at most ${MAX_OTHER_LINKS} "Other" links per submission.`,
+            duration: 6000,
+          });
+          return;
+        }
+      }
+    }
+
     const updatedLinks = [...currentLinks];
     updatedLinks[index] = { ...updatedLinks[index], [field]: value };
     form.setValue('links', updatedLinks, { shouldValidate: true });
@@ -643,7 +702,7 @@ const SubmissionFormContent: React.FC<SubmissionFormContentProps> = ({
       if (requireOtherLinks && !hasValidOtherLink) {
         form.setError('links', {
           message:
-            'At least one additional link (Demo, Website, Documentation, or Other) is required for this hackathon.',
+            'At least one additional link (Demo, Video, Document, Presentation, or Other) is required for this hackathon.',
         });
         return;
       }
@@ -792,7 +851,7 @@ const SubmissionFormContent: React.FC<SubmissionFormContentProps> = ({
       if (requireOtherLinks && !hasValidOtherLink) {
         form.setError('links', {
           message:
-            'At least one additional link (Demo, Website, Documentation, or Other) is required for this hackathon.',
+            'At least one additional link (Demo, Video, Document, Presentation, or Other) is required for this hackathon.',
         });
         setCurrentStep(2);
         updateStepState(2, 'active');
@@ -1346,12 +1405,13 @@ const SubmissionFormContent: React.FC<SubmissionFormContentProps> = ({
                   <FormControl>
                     <Textarea
                       placeholder='Tell us more about your project...'
+                      maxLength={500}
                       className='min-h-[100px] border-gray-700 bg-gray-800/50 text-white placeholder:text-gray-500'
                       {...field}
                     />
                   </FormControl>
                   <FormDescription className='text-gray-400'>
-                    Optional: Additional information about your project
+                    Optional. {field.value?.length || 0} / 500 characters max
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
@@ -1386,12 +1446,17 @@ const SubmissionFormContent: React.FC<SubmissionFormContentProps> = ({
                     {(requireGithub || requireOtherLinks) && (
                       <FormDescription className='text-gray-400'>
                         {requireGithub && requireOtherLinks
-                          ? 'GitHub repository link and at least one additional link (Demo, Website, Documentation, or Other) are required for this hackathon.'
+                          ? 'GitHub repository link and at least one additional link (Demo, Video, Document, Presentation, or Other) are required for this hackathon.'
                           : requireGithub
                             ? 'GitHub repository link is required for this hackathon.'
-                            : 'At least one additional link (Demo, Website, Documentation, or Other) is required for this hackathon.'}
+                            : 'At least one additional link (Demo, Video, Document, Presentation, or Other) is required for this hackathon.'}
                       </FormDescription>
                     )}
+                    <FormDescription className='text-gray-400'>
+                      Each link type can be used at most once. For additional
+                      links, choose &quot;Other&quot; (up to {MAX_OTHER_LINKS}{' '}
+                      allowed).
+                    </FormDescription>
                     {formLinks.length === 0 ? (
                       <p className='text-sm text-gray-400'>
                         No links added. Click "Add Link" to add project links.
