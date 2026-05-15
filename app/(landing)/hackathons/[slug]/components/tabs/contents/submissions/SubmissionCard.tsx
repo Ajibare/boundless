@@ -113,7 +113,7 @@ const SubmissionCard = ({ submission }: SubmissionCardProps) => {
           <img
             src={logo}
             alt={`${projectName} logo`}
-            className='absolute bottom-3 left-3 h-12 w-12 rounded-lg border-2 border-[#0D0E10] bg-[#0D0E10] object-cover shadow-lg'
+            className='absolute bottom-3 left-3 h-12 w-12 rounded-lg border-2 border-[#0D0E10] bg-[#0D0E10] object-contain shadow-lg'
           />
         )}
       </div>
@@ -130,12 +130,9 @@ const SubmissionCard = ({ submission }: SubmissionCardProps) => {
 
           {/* Tags/Categories */}
           <div className='flex flex-wrap gap-2 pt-2'>
-            <span className='text-primary rounded-md bg-[#232B20]/50 px-2.5 py-1 text-[10px] font-bold tracking-wider uppercase'>
-              {category}
-            </span>
-            {submission.category && (
-              <span className='rounded-md bg-white/5 px-2.5 py-1 text-[10px] font-bold tracking-wider text-gray-400 uppercase'>
-                {submission.category}
+            {category && (
+              <span className='text-primary rounded-md bg-[#232B20]/50 px-2.5 py-1 text-[10px] font-bold tracking-wider uppercase'>
+                {category}
               </span>
             )}
           </div>
