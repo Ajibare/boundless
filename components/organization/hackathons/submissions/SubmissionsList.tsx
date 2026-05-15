@@ -16,6 +16,7 @@ import { reportError } from '@/lib/error-reporting';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { BoundlessButton } from '@/components/buttons/BoundlessButton';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import {
@@ -157,10 +158,6 @@ export function SubmissionsList({
     router.push(`/projects/${submissionId}?type=submission`);
   };
 
-  const isBeforeDeadline = hackathon?.submissionDeadline
-    ? new Date() < new Date(hackathon.submissionDeadline)
-    : false;
-
   if (submissions.length === 0 && !loading) {
     return (
       <div className='flex flex-col items-center justify-center rounded-xl border border-gray-800/50 bg-gray-900/20 py-20 text-center'>
@@ -287,49 +284,45 @@ export function SubmissionsList({
                         onClick={e => e.stopPropagation()}
                       >
                         {subData.status === 'SUBMITTED' ? (
-                          <Button
+                          <BoundlessButton
                             size='sm'
+                            variant='default'
                             onClick={e =>
                               handleReview(e, subData.id, 'SHORTLISTED')
                             }
-                            disabled={
-                              reviewingId === subData.id || isBeforeDeadline
-                            }
-                            className='flex-1 bg-green-600 text-white hover:bg-green-700'
+                            disabled={reviewingId === subData.id}
+                            className='flex-1'
                           >
                             <CheckCircle className='mr-1.5 h-3.5 w-3.5' />
                             {reviewingId === subData.id
                               ? 'Approving...'
-                              : isBeforeDeadline
-                                ? 'Before Deadline'
-                                : 'Approve'}
-                          </Button>
+                              : 'Approve'}
+                          </BoundlessButton>
                         ) : (
-                          <Button
+                          <BoundlessButton
                             size='sm'
                             variant='outline'
                             onClick={e =>
                               handleReview(e, subData.id, 'SUBMITTED')
                             }
                             disabled={reviewingId === subData.id}
-                            className='flex-1 border-yellow-600/50 text-yellow-500 hover:bg-yellow-600/10'
+                            className='flex-1'
                           >
                             <RotateCcw className='mr-1.5 h-3.5 w-3.5' />
                             {reviewingId === subData.id
                               ? 'Moving...'
                               : 'Move to Submitted'}
-                          </Button>
+                          </BoundlessButton>
                         )}
                         {onDisqualify && (
-                          <Button
+                          <BoundlessButton
                             size='sm'
-                            variant='outline'
+                            variant='destructive'
                             onClick={e => handleDisqualifyClick(e, subData.id)}
-                            className='border-red-600/50 text-red-500 hover:bg-red-600/10'
                           >
                             <Ban className='mr-1.5 h-3.5 w-3.5' />
                             Disqualify
-                          </Button>
+                          </BoundlessButton>
                         )}
                       </div>
                     )}
@@ -506,18 +499,13 @@ export function SubmissionsList({
                                   onClick={e =>
                                     handleReview(e, subData.id, 'SHORTLISTED')
                                   }
-                                  disabled={
-                                    reviewingId === subData.id ||
-                                    isBeforeDeadline
-                                  }
-                                  className={`cursor-pointer text-green-500 focus:bg-green-900/20 focus:text-green-400 ${isBeforeDeadline ? 'cursor-not-allowed opacity-50' : ''}`}
+                                  disabled={reviewingId === subData.id}
+                                  className='text-primary focus:bg-primary/10 focus:text-primary cursor-pointer'
                                 >
                                   <CheckCircle className='mr-2 h-4 w-4' />
                                   {reviewingId === subData.id
                                     ? 'Approving...'
-                                    : isBeforeDeadline
-                                      ? 'Before Deadline'
-                                      : 'Approve'}
+                                    : 'Approve'}
                                 </DropdownMenuItem>
                               ) : (
                                 <DropdownMenuItem

@@ -14,7 +14,10 @@ import FindTeam from './contents/FindTeam';
 import SponsorsTab from './contents/SponsorsTab';
 import { useEffect, useState, useMemo } from 'react';
 import { useHackathonData } from '@/lib/providers/hackathonProvider';
-import { useHackathonAnnouncements } from '@/hooks/hackathon/use-hackathon-queries';
+import {
+  useHackathonAnnouncements,
+  useHackathonTeams,
+} from '@/hooks/hackathon/use-hackathon-queries';
 import { useCommentSystem } from '@/hooks/use-comment-system';
 import { CommentEntityType } from '@/types/comment';
 import { Megaphone } from 'lucide-react';
@@ -46,6 +49,17 @@ const HackathonTabs = ({ sidebar }: HackathonTabsProps) => {
     enabled: !!currentHackathon?.id,
   });
 
+  const participantType = currentHackathon?.participantType;
+  const isTeamHackathon =
+    participantType === 'TEAM' || participantType === 'TEAM_OR_INDIVIDUAL';
+
+  const { data: teamsCountResponse } = useHackathonTeams(
+    slug,
+    { page: 1, limit: 1 },
+    !!slug && isTeamHackathon
+  );
+  const teamsTotal = teamsCountResponse?.data?.pagination?.total ?? 0;
+
   const [activeTab, setActiveTab] = useState('overview');
 
   const hackathonTabs = useMemo(() => {
@@ -54,10 +68,6 @@ const HackathonTabs = ({ sidebar }: HackathonTabsProps) => {
     const hasResources = currentHackathon.resources?.length > 0;
     const hasWinners = !!(winners && winners.length > 0);
     const hasAnnouncements = announcements.length > 0;
-
-    const participantType = currentHackathon.participantType;
-    const isTeamHackathon =
-      participantType === 'TEAM' || participantType === 'TEAM_OR_INDIVIDUAL';
 
     const tabs = [
       { id: 'overview', label: 'Overview' },
@@ -105,6 +115,7 @@ const HackathonTabs = ({ sidebar }: HackathonTabsProps) => {
       tabs.push({
         id: 'team-formation',
         label: 'Find Team',
+        badge: teamsTotal,
       });
     }
 
@@ -159,6 +170,8 @@ const HackathonTabs = ({ sidebar }: HackathonTabsProps) => {
     announcements,
     announcementsLoading,
     generalLoading,
+    isTeamHackathon,
+    teamsTotal,
   ]);
 
   useEffect(() => {

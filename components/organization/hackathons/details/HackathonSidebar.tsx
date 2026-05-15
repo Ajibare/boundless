@@ -3,6 +3,7 @@ import {
   Settings,
   LayoutDashboard,
   Users,
+  UsersRound,
   BarChartBig,
   Megaphone,
   FileText,
@@ -319,6 +320,16 @@ export default function HackathonSidebar({
             ? `${basePath}/submissions`
             : '#',
         description: 'View all submissions',
+        disabled: hackathonId?.startsWith('draft-'),
+      },
+      {
+        icon: UsersRound,
+        label: 'Teams',
+        href:
+          basePath !== '#' && !hackathonId?.startsWith('draft-')
+            ? `${basePath}/teams`
+            : '#',
+        description: 'View all teams',
         disabled: hackathonId?.startsWith('draft-'),
       },
       {

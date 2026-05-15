@@ -186,7 +186,14 @@ const MyTeamView = ({ team, hackathonSlug }: MyTeamViewProps) => {
           </div>
           <div>
             <h2 className='text-xl font-bold text-white sm:text-2xl'>
-              {team.teamName}
+              <a
+                href={`/hackathons/${hackathonSlug}/teams/${team.id}`}
+                target='_blank'
+                rel='noopener noreferrer'
+                className='hover:text-primary transition-colors'
+              >
+                {team.teamName}
+              </a>
             </h2>
             <div className='mt-1 flex flex-wrap items-center gap-2 sm:gap-3'>
               <span className='text-primary text-sm font-bold'>

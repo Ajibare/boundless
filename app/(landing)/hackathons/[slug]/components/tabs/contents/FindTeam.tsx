@@ -88,7 +88,9 @@ const FindTeam = () => {
     !!hackathon?.id && hackathon.participantType !== 'INDIVIDUAL'
   );
 
-  const teams = teamsResponse?.data?.teams || [];
+  const teams = (teamsResponse?.data?.teams || []).filter(
+    t => !myTeam || t.id !== myTeam.id
+  );
 
   const handleJoin = (team: Team) => {
     setSelectedTeam(team);
@@ -98,14 +100,6 @@ const FindTeam = () => {
   if (!hackathon) return null;
 
   const isIndividualOnly = hackathon.participantType === 'INDIVIDUAL';
-
-  if (myTeam) {
-    return (
-      <TabsContent value='team-formation' className='mt-0 w-full outline-none'>
-        <MyTeamView team={myTeam} hackathonSlug={slug} />
-      </TabsContent>
-    );
-  }
 
   return (
     <TabsContent
@@ -129,9 +123,18 @@ const FindTeam = () => {
         </div>
       ) : (
         <>
+          {myTeam && (
+            <div className='space-y-4'>
+              <MyTeamView team={myTeam} hackathonSlug={slug} />
+              <div className='h-px w-full bg-white/5' />
+            </div>
+          )}
+
           <div className='flex items-center justify-between'>
             <div>
-              <h2 className='text-2xl font-bold text-white'>Open Teams</h2>
+              <h2 className='text-2xl font-bold text-white'>
+                {myTeam ? 'Other Teams' : 'Open Teams'}
+              </h2>
               <p className='mt-1 text-sm text-gray-500'>
                 Find builders to collaborate with on your project.
               </p>

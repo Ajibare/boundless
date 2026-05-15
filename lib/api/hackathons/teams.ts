@@ -50,6 +50,7 @@ export interface Team {
   organizationId?: string;
   views?: number;
   contactCount?: number;
+  hasSubmission?: boolean;
   createdAt: string;
   updatedAt: string;
   posts?: Team[];
