@@ -42,7 +42,7 @@ export function ProjectSidebarHeader({
             alt={project.title}
             width={80}
             height={80}
-            className='relative h-20 w-20 rounded-xl object-cover ring-2 ring-gray-800/50'
+            className='relative h-20 w-20 rounded-xl object-contain ring-2 ring-gray-800/50'
           />
         </div>
 

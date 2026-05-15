@@ -20,6 +20,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
+import { BoundlessButton } from '@/components/buttons/BoundlessButton';
 import { SubmissionsList } from './SubmissionsList';
 import { DisqualifyDialog } from './DisqualifyDialog';
 import type { ParticipantSubmission, Hackathon } from '@/lib/api/hackathons';
@@ -177,35 +178,36 @@ export function SubmissionsManagement({
               </div>
               <div className='bg-primary/20 hidden h-4 w-px sm:block' />
               <div className='flex flex-wrap items-center gap-2'>
-                <Button
+                <BoundlessButton
                   size='sm'
+                  variant='default'
                   onClick={() => handleBulkAction('SHORTLISTED')}
                   disabled={isBulkLoading}
-                  className='shrink-0 bg-green-600 text-white hover:bg-green-700'
+                  className='shrink-0'
                 >
                   <CheckCircle className='mr-1.5 h-3.5 w-3.5' />
                   Approve
-                </Button>
-                <Button
+                </BoundlessButton>
+                <BoundlessButton
                   size='sm'
                   variant='outline'
                   onClick={() => handleBulkAction('SUBMITTED')}
                   disabled={isBulkLoading}
-                  className='shrink-0 border-yellow-600/50 text-yellow-500 hover:bg-yellow-600/10'
+                  className='shrink-0'
                 >
                   <RotateCcw className='mr-1.5 h-3.5 w-3.5' />
                   Reset
-                </Button>
-                <Button
+                </BoundlessButton>
+                <BoundlessButton
                   size='sm'
-                  variant='outline'
+                  variant='destructive'
                   onClick={() => setShowBulkDisqualifyDialog(true)}
                   disabled={isBulkLoading}
-                  className='shrink-0 border-red-600/50 text-red-500 hover:bg-red-600/10'
+                  className='shrink-0'
                 >
                   <Ban className='mr-1.5 h-3.5 w-3.5' />
                   Disqualify
-                </Button>
+                </BoundlessButton>
               </div>
             </div>
           ) : (

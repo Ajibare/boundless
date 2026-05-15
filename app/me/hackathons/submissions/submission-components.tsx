@@ -227,7 +227,7 @@ export function SubmissionsSheetContent({
             src={submission.hackathon?.banner || submission.logo!}
             alt={submission.projectName}
             fill
-            className='object-cover opacity-80'
+            className='object-contain opacity-80'
           />
           {submission.logo && submission.hackathon?.banner && (
             <div className='absolute bottom-3 left-4'>
@@ -236,7 +236,7 @@ export function SubmissionsSheetContent({
                   src={submission.logo}
                   alt='Project logo'
                   fill
-                  className='object-cover'
+                  className='object-contain'
                 />
               </div>
             </div>
@@ -450,7 +450,7 @@ export function TableRow({
                 src={submission.logo}
                 alt={submission.projectName}
                 fill
-                className='object-cover'
+                className='object-contain'
               />
             </div>
           ) : (

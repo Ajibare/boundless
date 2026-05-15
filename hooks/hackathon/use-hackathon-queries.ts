@@ -91,6 +91,8 @@ export const hackathonKeys = {
   // a 4-element key that does NOT prefix-match cached ['…',slug,{...params}].
   teamsBase: (idOrSlug: string) => ['hackathon', 'teams', idOrSlug] as const,
   myTeam: (idOrSlug: string) => ['hackathon', 'myTeam', idOrSlug] as const,
+  team: (idOrSlug: string, teamId: string) =>
+    ['hackathon', 'team', idOrSlug, teamId] as const,
   myInvitations: (idOrSlug: string, status?: string) =>
     ['hackathon', 'myInvitations', idOrSlug, status] as const,
   teamInvitations: (idOrSlug: string, teamId: string, status?: string) =>
@@ -300,6 +302,20 @@ export function useHackathonTeams(
 
 // Legacy alias
 export const useTeamPosts = useHackathonTeams;
+
+/**
+ * Fetch a single team by id.
+ */
+export function useTeam(idOrSlug: string, teamId: string, enabled = true) {
+  return useQuery({
+    queryKey: hackathonKeys.team(idOrSlug, teamId),
+    queryFn: async () => {
+      const response = await getTeamDetails(idOrSlug, teamId);
+      return response.data;
+    },
+    enabled: !!idOrSlug && !!teamId && enabled,
+  });
+}
 
 /**
  * Fetch current user's team.

@@ -128,6 +128,10 @@ const ParticipantsPage: React.FC = () => {
   const [statistics, setStatistics] = useState<{
     participantsCount: number;
     submissionsCount: number;
+    soloParticipants: number;
+    totalTeams: number;
+    soloSubmissions: number;
+    teamSubmissions: number;
   } | null>(null);
   const [statisticsLoading, setStatisticsLoading] = useState(false);
 
@@ -143,10 +147,18 @@ const ParticipantsPage: React.FC = () => {
           const stats = response.data as {
             totalSubmissions?: number;
             activeParticipants?: number;
+            soloParticipants?: number;
+            totalTeams?: number;
+            soloSubmissions?: number;
+            teamSubmissions?: number;
           };
           setStatistics({
             participantsCount: stats.activeParticipants ?? 0,
             submissionsCount: stats.totalSubmissions ?? 0,
+            soloParticipants: stats.soloParticipants ?? 0,
+            totalTeams: stats.totalTeams ?? 0,
+            soloSubmissions: stats.soloSubmissions ?? 0,
+            teamSubmissions: stats.teamSubmissions ?? 0,
           });
         } catch (err) {
           reportError(err, {
@@ -280,7 +292,7 @@ const ParticipantsPage: React.FC = () => {
     <AuthGuard redirectTo='/auth?mode=signin' fallback={<Loading />}>
       <div className='bg-background min-h-screen space-y-6 p-8 text-white'>
         <div className='flex flex-col gap-6'>
-          <div className='flex gap-4'>
+          <div className='grid gap-4 sm:grid-cols-2 lg:grid-cols-4'>
             <MetricsCard
               title='Total Participants'
               value={statistics?.participantsCount ?? 0}
@@ -290,6 +302,24 @@ const ParticipantsPage: React.FC = () => {
                   : `${statistics?.participantsCount ?? 0} registered`
               }
               showTrend={true}
+            />
+            <MetricsCard
+              title='Solo Participants'
+              value={statistics?.soloParticipants ?? 0}
+              subtitle={
+                statisticsLoading
+                  ? 'Loading...'
+                  : `${statistics?.soloParticipants ?? 0} not on a team`
+              }
+            />
+            <MetricsCard
+              title='Teams'
+              value={statistics?.totalTeams ?? 0}
+              subtitle={
+                statisticsLoading
+                  ? 'Loading...'
+                  : `${statistics?.totalTeams ?? 0} formed`
+              }
             />
             <MetricsCard
               title='Total Submissions'

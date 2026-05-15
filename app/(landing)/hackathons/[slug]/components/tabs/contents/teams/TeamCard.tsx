@@ -1,6 +1,7 @@
 'use client';
 
-import React from 'react';
+import React, { useCallback } from 'react';
+import { useParams } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { Team, TeamMember } from '@/lib/api/hackathons/teams';
 import GroupAvatar from '@/components/avatars/GroupAvatar';
@@ -14,6 +15,16 @@ interface TeamCardProps {
 }
 
 const TeamCard = ({ team, onJoin, onMessageLeader }: TeamCardProps) => {
+  const { slug } = useParams<{ slug: string }>();
+
+  const openTeamDetails = useCallback(() => {
+    if (!slug || !team.id) return;
+    window.open(
+      `/hackathons/${slug}/teams/${team.id}`,
+      '_blank',
+      'noopener,noreferrer'
+    );
+  }, [slug, team.id]);
   const {
     teamName,
     description,
@@ -32,7 +43,18 @@ const TeamCard = ({ team, onJoin, onMessageLeader }: TeamCardProps) => {
   };
 
   return (
-    <div className='group hover:border-primary/20 flex h-full flex-col overflow-hidden rounded-2xl border border-white/5 bg-[#0A0B0D] p-8 transition-all hover:bg-[#0D0F12]'>
+    <div
+      role='link'
+      tabIndex={0}
+      onClick={openTeamDetails}
+      onKeyDown={e => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          openTeamDetails();
+        }
+      }}
+      className='group hover:border-primary/20 flex h-full cursor-pointer flex-col overflow-hidden rounded-2xl border border-white/5 bg-[#0A0B0D] p-8 transition-all hover:bg-[#0D0F12]'
+    >
       <div className='mb-6 flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between'>
         <div className='flex items-start gap-4'>
           <div className='text-primary flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-[#232B20] text-xl font-black'>
@@ -70,7 +92,10 @@ const TeamCard = ({ team, onJoin, onMessageLeader }: TeamCardProps) => {
                 variant='outline'
                 size='sm'
                 className='h-11 shrink-0 rounded-xl border-white/10 bg-white/5 px-4 text-sm font-bold text-white transition-all hover:bg-white/10'
-                onClick={e => onMessageLeader(team, e.currentTarget)}
+                onClick={e => {
+                  e.stopPropagation();
+                  onMessageLeader(team, e.currentTarget);
+                }}
                 aria-label='Message team leader'
               >
                 <MessageCircle className='mr-2 h-4 w-4' />
@@ -81,7 +106,10 @@ const TeamCard = ({ team, onJoin, onMessageLeader }: TeamCardProps) => {
               variant='outline'
               size='sm'
               className='border-primary/20 text-primary hover:bg-primary h-11 w-full rounded-xl bg-[#232B20]/30 px-6 text-sm font-bold transition-all hover:text-black sm:w-auto'
-              onClick={() => onJoin?.(team)}
+              onClick={e => {
+                e.stopPropagation();
+                onJoin?.(team);
+              }}
               disabled={memberCount >= maxSize}
             >
               Join Team

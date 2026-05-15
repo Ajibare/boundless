@@ -11,9 +11,11 @@ import { SubmissionsManagement } from '@/components/organization/hackathons/subm
 import { authClient } from '@/lib/auth-client';
 import {
   getHackathon,
+  getHackathonStatistics,
   type Hackathon,
   type ParticipantSubmission,
 } from '@/lib/api/hackathons';
+import MetricsCard from '@/components/organization/cards/MetricsCard';
 import { reportError } from '@/lib/error-reporting';
 import { useReactTable, getCoreRowModel } from '@tanstack/react-table';
 import { DataTablePagination } from '@/components/ui/data-table-pagination';
@@ -38,6 +40,12 @@ export default function SubmissionsPage() {
 
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [hackathon, setHackathon] = useState<Hackathon | null>(null);
+  const [submissionStats, setSubmissionStats] = useState<{
+    soloSubmissions: number;
+    teamSubmissions: number;
+    totalSubmissions: number;
+  } | null>(null);
+  const [submissionStatsLoading, setSubmissionStatsLoading] = useState(false);
 
   useEffect(() => {
     if (hackathonId) {
@@ -57,6 +65,35 @@ export default function SubmissionsPage() {
       fetchHackathonDetails();
     }
   }, [hackathonId]);
+
+  useEffect(() => {
+    if (!organizationId || !hackathonId) return;
+    const loadStats = async () => {
+      setSubmissionStatsLoading(true);
+      try {
+        const res = await getHackathonStatistics(organizationId, hackathonId);
+        const stats = res.data as {
+          totalSubmissions?: number;
+          soloSubmissions?: number;
+          teamSubmissions?: number;
+        };
+        setSubmissionStats({
+          totalSubmissions: stats.totalSubmissions ?? 0,
+          soloSubmissions: stats.soloSubmissions ?? 0,
+          teamSubmissions: stats.teamSubmissions ?? 0,
+        });
+      } catch (err) {
+        reportError(err, {
+          context: 'org-submissions-fetchStats',
+          organizationId,
+          hackathonId,
+        });
+      } finally {
+        setSubmissionStatsLoading(false);
+      }
+    };
+    loadStats();
+  }, [organizationId, hackathonId]);
 
   useEffect(() => {
     const fetchSession = async () => {
@@ -142,6 +179,36 @@ export default function SubmissionsPage() {
             </div>
           ) : (
             <div className='space-y-6'>
+              <div className='grid gap-4 sm:grid-cols-3'>
+                <MetricsCard
+                  title='Total Submissions'
+                  value={submissionStats?.totalSubmissions ?? 0}
+                  subtitle={
+                    submissionStatsLoading
+                      ? 'Loading...'
+                      : `${submissionStats?.totalSubmissions ?? 0} received`
+                  }
+                />
+                <MetricsCard
+                  title='Solo Submissions'
+                  value={submissionStats?.soloSubmissions ?? 0}
+                  subtitle={
+                    submissionStatsLoading
+                      ? 'Loading...'
+                      : `${submissionStats?.soloSubmissions ?? 0} individual`
+                  }
+                />
+                <MetricsCard
+                  title='Team Submissions'
+                  value={submissionStats?.teamSubmissions ?? 0}
+                  subtitle={
+                    submissionStatsLoading
+                      ? 'Loading...'
+                      : `${submissionStats?.teamSubmissions ?? 0} from teams`
+                  }
+                />
+              </div>
+
               <SubmissionsManagement
                 submissions={allSubmissions}
                 pagination={pagination}
