@@ -19,6 +19,7 @@ import {
 import TeamCard from './teams/TeamCard';
 import MyTeamView from './teams/MyTeamView';
 import { BoundlessButton } from '@/components/buttons/BoundlessButton';
+import Pagination from '@/components/ui/pagination';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -91,6 +92,7 @@ const FindTeam = () => {
   const teams = (teamsResponse?.data?.teams || []).filter(
     t => !myTeam || t.id !== myTeam.id
   );
+  const totalPages = teamsResponse?.data?.pagination?.totalPages ?? 1;
 
   const handleJoin = (team: Team) => {
     setSelectedTeam(team);
@@ -264,16 +266,23 @@ const FindTeam = () => {
               </p>
             </div>
           ) : teams.length > 0 ? (
-            <div className='grid grid-cols-1 gap-6 md:grid-cols-1'>
-              {teams.map(team => (
-                <TeamCard
-                  key={team.id}
-                  team={team}
-                  onJoin={() => handleJoin(team)}
-                  onMessageLeader={handleMessageLeader}
-                />
-              ))}
-            </div>
+            <>
+              <div className='grid grid-cols-1 gap-6 lg:grid-cols-2'>
+                {teams.map(team => (
+                  <TeamCard
+                    key={team.id}
+                    team={team}
+                    onJoin={() => handleJoin(team)}
+                    onMessageLeader={handleMessageLeader}
+                  />
+                ))}
+              </div>
+              <Pagination
+                currentPage={page}
+                totalPages={totalPages}
+                onPageChange={setPage}
+              />
+            </>
           ) : (
             <div className='flex flex-col items-center justify-center space-y-6 rounded-3xl border border-white/5 bg-[#0D0E10] py-24 text-center'>
               <div className='flex h-20 w-20 items-center justify-center rounded-full bg-white/5'>
