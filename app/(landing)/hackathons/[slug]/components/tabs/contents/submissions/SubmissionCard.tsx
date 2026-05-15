@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
 import { LayoutGrid, Loader2, Pencil, Trash2 } from 'lucide-react';
@@ -142,7 +143,24 @@ const SubmissionCard = ({ submission }: SubmissionCardProps) => {
         <div className='flex items-center justify-between gap-2 border-t border-white/5 pt-5'>
           <div className='flex items-center gap-3'>
             {isTeam ? (
-              <GroupAvatar members={teamMembers.map(m => m.avatar ?? '')} />
+              <GroupAvatar
+                members={teamMembers.map(m => m.avatar ?? '')}
+                usernames={teamMembers.map(m => m.username)}
+              />
+            ) : participant?.username ? (
+              <Link
+                href={`/profile/${participant.username}`}
+                target='_blank'
+                rel='noopener noreferrer'
+                aria-label={`View @${participant.username} profile`}
+                className='hover:opacity-90'
+              >
+                <BasicAvatar
+                  image={submitterAvatar}
+                  name={submitterName}
+                  username={participant.username}
+                />
+              </Link>
             ) : (
               <BasicAvatar
                 image={submitterAvatar}

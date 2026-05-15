@@ -267,7 +267,7 @@ const FindTeam = () => {
             </div>
           ) : teams.length > 0 ? (
             <>
-              <div className='grid grid-cols-1 gap-6 lg:grid-cols-2'>
+              <div className='grid grid-cols-1 gap-6'>
                 {teams.map(team => (
                   <TeamCard
                     key={team.id}
