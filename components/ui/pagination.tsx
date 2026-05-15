@@ -1,5 +1,11 @@
 import React from 'react';
-import { BoundlessButton } from '../buttons';
+import {
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 interface PaginationProps {
   currentPage: number;
@@ -18,64 +24,52 @@ const Pagination: React.FC<PaginationProps> = ({
     return null;
   }
 
+  const canPrev = currentPage > 1;
+  const canNext = currentPage < totalPages;
+
   return (
-    <div className={`mt-6 w-full border-t border-[#2B2B2B] pt-4 ${className}`}>
-      <div className='flex items-center justify-between'>
-        <span className='text-sm text-gray-400'>
+    <div className={`flex items-center justify-end px-2 ${className}`}>
+      <div className='flex items-center space-x-6 lg:space-x-8'>
+        <div className='flex w-[100px] items-center justify-center text-sm font-medium text-white'>
           Page {currentPage} of {totalPages}
-        </span>
-
-        <div className='flex gap-2'>
-          <BoundlessButton
+        </div>
+        <div className='flex items-center space-x-2'>
+          <Button
+            size='icon'
+            className='bg-primary text-primary-foreground hover:bg-primary/90 hidden size-8 lg:flex'
+            onClick={() => onPageChange(1)}
+            disabled={!canPrev}
+          >
+            <span className='sr-only'>Go to first page</span>
+            <ChevronsLeft />
+          </Button>
+          <Button
+            size='icon'
+            className='bg-primary text-primary-foreground hover:bg-primary/90 size-8'
             onClick={() => onPageChange(currentPage - 1)}
-            disabled={currentPage === 1}
-            size='sm'
-            variant='outline'
-            className=''
+            disabled={!canPrev}
           >
-            Previous
-          </BoundlessButton>
-
-          {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => {
-            if (
-              page === 1 ||
-              page === totalPages ||
-              Math.abs(page - currentPage) <= 1
-            ) {
-              return (
-                <BoundlessButton
-                  key={page}
-                  onClick={() => onPageChange(page)}
-                  size='sm'
-                  variant={currentPage === page ? 'default' : 'outline'}
-                  className={
-                    currentPage === page
-                      ? 'bg-blue-600'
-                      : 'border-[#2B2B2B] text-white hover:bg-[#2B2B2B]'
-                  }
-                >
-                  {page}
-                </BoundlessButton>
-              );
-            } else if (page === currentPage - 2 || page === currentPage + 2) {
-              return (
-                <span key={page} className='px-2 text-gray-500'>
-                  ...
-                </span>
-              );
-            }
-            return null;
-          })}
-
-          <BoundlessButton
+            <span className='sr-only'>Go to previous page</span>
+            <ChevronLeft />
+          </Button>
+          <Button
+            size='icon'
+            className='bg-primary text-primary-foreground hover:bg-primary/90 size-8'
             onClick={() => onPageChange(currentPage + 1)}
-            disabled={currentPage === totalPages}
-            size='sm'
-            variant='outline'
-            className='border-[#2B2B2B] text-white'
+            disabled={!canNext}
           >
-            Next
-          </BoundlessButton>
+            <span className='sr-only'>Go to next page</span>
+            <ChevronRight />
+          </Button>
+          <Button
+            size='icon'
+            className='bg-primary text-primary-foreground hover:bg-primary/90 hidden size-8 lg:flex'
+            onClick={() => onPageChange(totalPages)}
+            disabled={!canNext}
+          >
+            <span className='sr-only'>Go to last page</span>
+            <ChevronsRight />
+          </Button>
         </div>
       </div>
     </div>
