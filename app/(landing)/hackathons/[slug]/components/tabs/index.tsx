@@ -35,6 +35,7 @@ const HackathonTabs = ({ sidebar }: HackathonTabsProps) => {
   const {
     currentHackathon,
     winners,
+    trackWinners,
     exploreSubmissionsTotal,
     loading: generalLoading,
   } = useHackathonData();
@@ -66,7 +67,10 @@ const HackathonTabs = ({ sidebar }: HackathonTabsProps) => {
     if (!currentHackathon) return [];
     const hasParticipants = currentHackathon._count?.participants > 0;
     const hasResources = currentHackathon.resources?.length > 0;
-    const hasWinners = !!(winners && winners.length > 0);
+    const hasWinners = !!(
+      (winners && winners.length > 0) ||
+      (trackWinners && trackWinners.length > 0)
+    );
     const hasAnnouncements = announcements.length > 0;
 
     const tabs = [
@@ -123,7 +127,7 @@ const HackathonTabs = ({ sidebar }: HackathonTabsProps) => {
       tabs.push({
         id: 'winners',
         label: 'Winners',
-        badge: winners.length,
+        badge: (winners?.length ?? 0) + (trackWinners?.length ?? 0),
       });
     }
 
@@ -165,6 +169,7 @@ const HackathonTabs = ({ sidebar }: HackathonTabsProps) => {
   }, [
     currentHackathon,
     winners,
+    trackWinners,
     exploreSubmissionsTotal,
     discussionComments.pagination.totalItems,
     announcements,
