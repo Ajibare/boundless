@@ -258,6 +258,8 @@ const JudgingParticipant = ({
                   <span className='h-1 w-1 rounded-full bg-gray-700' />
                   <Link
                     href={`/projects/${submissionData.id}?type=submission`}
+                    target='_blank'
+                    rel='noopener noreferrer'
                     className='flex items-center gap-1 transition-colors hover:text-white'
                   >
                     View Details <ExternalLink className='h-3 w-3' />
@@ -433,6 +435,8 @@ const JudgingParticipant = ({
             )}
             <Link
               href={`/projects/${submissionData.id}?type=submission`}
+              target='_blank'
+              rel='noopener noreferrer'
               className='flex h-7 w-7 items-center justify-center rounded-md border border-gray-800 text-gray-500 hover:bg-white/5 hover:text-white'
             >
               <ExternalLink className='h-3 w-3' />

@@ -200,7 +200,12 @@ const TrackWinnerCard = ({
       </div>
 
       {projectUrl ? (
-        <Link href={projectUrl}>
+        <Link
+          href={projectUrl}
+          target='_blank'
+          rel='noopener noreferrer'
+          className='block no-underline'
+        >
           <div className='flex items-center justify-between rounded-lg border border-gray-900 bg-black/20 p-2 transition-colors hover:bg-black/40'>
             <p className='line-clamp-1 text-sm font-medium text-white'>
               {trackWinner.projectName}

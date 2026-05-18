@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import {
   Users,
   User,
@@ -56,7 +55,6 @@ export function SubmissionsList({
   onSelectionChange,
   hackathon,
 }: SubmissionsListProps) {
-  const router = useRouter();
   const [reviewingId, setReviewingId] = useState<string | null>(null);
   const [disqualifyingId, setDisqualifyingId] = useState<string | null>(null);
   const [isDisqualifying, setIsDisqualifying] = useState(false);
@@ -155,7 +153,11 @@ export function SubmissionsList({
   };
 
   const handleSubmissionClick = (submissionId: string) => {
-    router.push(`/projects/${submissionId}?type=submission`);
+    window.open(
+      `/projects/${submissionId}?type=submission`,
+      '_blank',
+      'noopener,noreferrer'
+    );
   };
 
   if (submissions.length === 0 && !loading) {

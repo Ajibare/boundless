@@ -16,6 +16,7 @@ import {
 import { Separator } from '@/components/ui/separator';
 import { TableCell, TableRow as ShadcnTableRow } from '@/components/ui/table';
 import Image from 'next/image';
+import Link from 'next/link';
 import { format } from 'date-fns';
 import React, { useState } from 'react';
 
@@ -206,7 +207,7 @@ export function SubmissionsSheetContent({
         </div>
         <div className='flex items-center gap-3'>
           <StatusBadge status={submission.status} />
-          <a
+          <Link
             href={viewUrl}
             target='_blank'
             rel='noopener noreferrer'
@@ -216,7 +217,7 @@ export function SubmissionsSheetContent({
           >
             <ExternalLink className='h-3.5 w-3.5' />
             View Page
-          </a>
+          </Link>
         </div>
       </div>
 
@@ -463,7 +464,7 @@ export function TableRow({
               {submission.projectName}
             </span>
             {/* Always in DOM — fade via opacity so no layout shift */}
-            <a
+            <Link
               href={viewUrl}
               target='_blank'
               rel='noopener noreferrer'
@@ -477,7 +478,7 @@ export function TableRow({
               aria-label={`Open ${submission.projectName} in new tab`}
             >
               <ExternalLink className='h-3.5 w-3.5' />
-            </a>
+            </Link>
           </div>
         </div>
       </TableCell>

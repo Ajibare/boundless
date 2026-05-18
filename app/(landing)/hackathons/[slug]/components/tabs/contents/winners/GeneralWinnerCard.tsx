@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { HackathonWinner } from '@/lib/api/hackathons';
 import { SubmissionCardProps } from '@/types/hackathon';
@@ -14,7 +15,7 @@ export const GeneralWinnerCard = ({
   const projectUrl = `/projects/${winner.submissionId}?type=submission`;
 
   return (
-    <a
+    <Link
       href={projectUrl}
       target='_blank'
       rel='noopener noreferrer'
@@ -35,6 +36,6 @@ export const GeneralWinnerCard = ({
       </div>
 
       <div className='text-primary text-xs font-bold'>{winner.prize}</div>
-    </a>
+    </Link>
   );
 };

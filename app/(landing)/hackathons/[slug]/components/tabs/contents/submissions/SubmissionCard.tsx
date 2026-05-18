@@ -194,7 +194,7 @@ const SubmissionCard = ({ submission }: SubmissionCardProps) => {
               </>
             )}
 
-            <a href={projectUrl} target='_blank' rel='noopener noreferrer'>
+            <Link href={projectUrl} target='_blank' rel='noopener noreferrer'>
               <BoundlessButton
                 variant='outline'
                 size='sm'
@@ -202,7 +202,7 @@ const SubmissionCard = ({ submission }: SubmissionCardProps) => {
               >
                 View Project
               </BoundlessButton>
-            </a>
+            </Link>
           </div>
         </div>
       </div>

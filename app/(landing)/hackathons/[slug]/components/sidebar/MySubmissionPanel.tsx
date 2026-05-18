@@ -92,7 +92,11 @@ export default function MySubmissionPanel() {
     status !== 'WITHDRAWN';
 
   const handleView = () => {
-    router.push(`/projects/${submission.id}?type=submission`);
+    window.open(
+      `/projects/${submission.id}?type=submission`,
+      '_blank',
+      'noopener,noreferrer'
+    );
   };
 
   const handleEdit = () => {
