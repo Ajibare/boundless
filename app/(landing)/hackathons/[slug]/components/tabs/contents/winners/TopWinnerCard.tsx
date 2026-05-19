@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { HackathonWinner } from '@/lib/api/hackathons';
 import { Trophy } from 'lucide-react';
@@ -79,7 +80,7 @@ export const TopWinnerCard = ({ winner, submission }: TopWinnerCardProps) => {
               </div>
             </div>
 
-            <a href={projectUrl} target='_blank' rel='noopener noreferrer'>
+            <Link href={projectUrl} target='_blank' rel='noopener noreferrer'>
               <BoundlessButton
                 variant='outline'
                 size='sm'
@@ -87,7 +88,7 @@ export const TopWinnerCard = ({ winner, submission }: TopWinnerCardProps) => {
               >
                 View Project
               </BoundlessButton>
-            </a>
+            </Link>
           </div>
         </div>
       </div>

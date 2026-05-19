@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 import {
   CheckCircle2,
@@ -29,7 +29,6 @@ export default function JudgeSubmissionsPage() {
 
 function SubmissionsList() {
   const params = useParams<{ hackathonId: string }>();
-  const router = useRouter();
   const hackathonId = params?.hackathonId ?? '';
 
   const [filter, setFilter] = useState<Filter>('all');
@@ -88,13 +87,17 @@ function SubmissionsList() {
       } else if (e.key === 'Enter') {
         const s = visible[focusIdx];
         if (s) {
-          router.push(`/judge/${hackathonId}/submissions/${s.submission.id}`);
+          window.open(
+            `/judge/${hackathonId}/submissions/${s.submission.id}`,
+            '_blank',
+            'noopener,noreferrer'
+          );
         }
       }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [visible, focusIdx, router, hackathonId]);
+  }, [visible, focusIdx, hackathonId]);
 
   return (
     <div className='space-y-5'>
@@ -277,6 +280,8 @@ function Row({
   return (
     <Link
       href={`/judge/${hackathonId}/submissions/${submission.submission.id}`}
+      target='_blank'
+      rel='noopener noreferrer'
       onMouseEnter={onHover}
       className={cn(
         'group flex items-center gap-3 rounded-xl border bg-[#101010] px-4 py-3 transition-all',
