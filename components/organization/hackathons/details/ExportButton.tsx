@@ -50,6 +50,11 @@ const DATASETS = [
     label: 'Winners',
     description: 'Wallet address, activation & USDC trustline',
   },
+  {
+    id: 'judging',
+    label: 'Judging',
+    description: 'Results, judges, scores & comments',
+  },
 ] as const;
 
 export function ExportButton({
