@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useOptionalAuth } from '@/hooks/use-auth';
 import { useCommentSystem } from '@/hooks/use-comment-system';
 import { useCommentRealtime } from '@/hooks/use-comment-realtime';
@@ -17,6 +18,11 @@ interface ProjectCommentsProps {
 
 export function ProjectComments({ projectId }: ProjectCommentsProps) {
   const { user } = useOptionalAuth();
+  const searchParams = useSearchParams();
+  const entityType =
+    searchParams.get('type') === 'submission'
+      ? CommentEntityType.HACKATHON_SUBMISSION
+      : CommentEntityType.PROJECT;
   const [sortBy, setSortBy] = useState<
     'createdAt' | 'updatedAt' | 'totalReactions'
   >('createdAt');
@@ -28,7 +34,7 @@ export function ProjectComments({ projectId }: ProjectCommentsProps) {
 
   // Initialize the comment system for this project
   const commentSystem = useCommentSystem({
-    entityType: CommentEntityType.PROJECT,
+    entityType,
     entityId: projectId,
     page: 1,
     limit: 20,
@@ -38,7 +44,7 @@ export function ProjectComments({ projectId }: ProjectCommentsProps) {
   // Real-time updates
   useCommentRealtime(
     {
-      entityType: CommentEntityType.PROJECT,
+      entityType,
       entityId: projectId,
       userId: currentUserId,
       enabled: true,
@@ -71,7 +77,7 @@ export function ProjectComments({ projectId }: ProjectCommentsProps) {
     try {
       await commentSystem.createComment.createComment({
         content,
-        entityType: CommentEntityType.PROJECT,
+        entityType,
         entityId: projectId,
       });
     } catch (error) {
@@ -84,7 +90,7 @@ export function ProjectComments({ projectId }: ProjectCommentsProps) {
       await commentSystem.createComment.createComment({
         content,
         parentId: parentCommentId,
-        entityType: CommentEntityType.PROJECT,
+        entityType,
         entityId: projectId,
       } as any);
     } catch (error) {

@@ -60,4 +60,10 @@ export type ProjectStatus =
   | 'Funding'
   | 'idea'
   | 'pending'
-  | 'SUBMITTED';
+  | 'SUBMITTED'
+  // Hackathon-submission display labels emitted by the submission mapper
+  // in app/(landing)/projects/[slug]/page.tsx.
+  | 'Submitted'
+  | 'Shortlisted'
+  | 'Disqualified'
+  | 'Withdrawn';

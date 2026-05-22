@@ -1,6 +1,6 @@
 'use client';
 
-import { Calendar } from 'lucide-react';
+import { Calendar, Trophy } from 'lucide-react';
 import Image from 'next/image';
 import { ProjectSidebarHeaderProps } from './types';
 
@@ -8,6 +8,7 @@ export function ProjectSidebarHeader({
   project,
   projectStatus,
 }: ProjectSidebarHeaderProps) {
+  const submissionRank = project.submissionRank ?? null;
   const getStatusStyles = () => {
     switch (projectStatus) {
       case 'CAMPAIGNING':
@@ -21,11 +22,16 @@ export function ProjectSidebarHeader({
       case 'idea':
         return 'bg-warning-75 border-warning-600 text-warning-600';
       case 'Validated':
+      case 'Shortlisted':
         return 'bg-success-75 border-success-600 text-success-600';
       case 'Rejected':
+      case 'Disqualified':
         return 'bg-red-900/30 border-red-600 text-red-400';
+      case 'Withdrawn':
+        return 'bg-gray-800/60 border-gray-700 text-gray-300';
       case 'pending':
       case 'SUBMITTED':
+      case 'Submitted':
         return 'bg-gray-800 border-gray-700 text-white';
       default:
         return 'text-white border-gray-700';
@@ -60,6 +66,14 @@ export function ProjectSidebarHeader({
             >
               {projectStatus}
             </div>
+            {submissionRank != null && (
+              <div className='flex items-center gap-1 rounded-lg border border-yellow-500/40 bg-yellow-500/10 px-2.5 py-1 text-xs font-semibold text-yellow-400'>
+                <Trophy className='h-3.5 w-3.5' />
+                <span>
+                  {submissionRank === 1 ? 'Winner' : `Rank #${submissionRank}`}
+                </span>
+              </div>
+            )}
           </div>
         </div>
       </div>

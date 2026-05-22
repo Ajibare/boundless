@@ -45,7 +45,7 @@ export function ProjectSidebar({
   // Real-time vote updates
   useVoteRealtime(
     {
-      entityType: VoteEntityType.CROWDFUNDING_CAMPAIGN,
+      entityType,
       entityId: projectId || '',
       enabled: !!projectId,
     },
@@ -82,10 +82,7 @@ export function ProjectSidebar({
 
     const fetchVoteCounts = async () => {
       try {
-        const response: any = await getVoteCounts(
-          projectId,
-          VoteEntityType.CROWDFUNDING_CAMPAIGN
-        );
+        const response: any = await getVoteCounts(projectId, entityType);
         // The API returns { success: true, message: '...', data: { ... } }
         setVoteCounts(response.data || response);
       } catch {
@@ -94,7 +91,7 @@ export function ProjectSidebar({
     };
 
     fetchVoteCounts();
-  }, [projectId]);
+  }, [projectId, entityType]);
 
   const handleVote = async (value: 1 | -1) => {
     if (isVoting) return;

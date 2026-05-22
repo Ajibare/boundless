@@ -273,6 +273,29 @@ function mapSubmissionToCrowdfunding(
 
   const projectId = subData.id || subData._id || '';
 
+  // Map raw submission status to a friendly display label so the sidebar
+  // badge reads "Shortlisted" instead of "SHORTLISTED". The raw value is
+  // also preserved on submissionStatus so anything that needs the original
+  // enum value can still get it.
+  const submissionRank: number | null =
+    typeof subData.rank === 'number' ? subData.rank : null;
+  const rawSubmissionStatus: string =
+    typeof subData.status === 'string' ? subData.status : '';
+  const friendlySubmissionStatus = (() => {
+    switch (rawSubmissionStatus.toUpperCase()) {
+      case 'SUBMITTED':
+        return 'Submitted';
+      case 'SHORTLISTED':
+        return 'Shortlisted';
+      case 'DISQUALIFIED':
+        return 'Disqualified';
+      case 'WITHDRAWN':
+        return 'Withdrawn';
+      default:
+        return rawSubmissionStatus || 'pending';
+    }
+  })();
+
   // Find demo video in links if not provided directly
   let demoVideoUrl = subData.videoUrl || '';
   if (!demoVideoUrl && socialLinks.length > 0) {
@@ -320,7 +343,9 @@ function mapSubmissionToCrowdfunding(
       vision: null,
       details: null,
       category: subData.category || 'General',
-      status: subData.status || 'pending',
+      status: friendlySubmissionStatus,
+      submissionRank,
+      submissionStatus: rawSubmissionStatus || null,
       creatorId: subData.participantId || subData.userId || '',
       organizationId: subData.organizationId || null,
       teamMembers: teamMembers,
