@@ -140,7 +140,7 @@ const BlogPostDetails: React.FC<BlogPostDetailsProps> = ({
                   src={post.coverImage}
                   alt={post.title}
                   fill
-                  className='rounded-lg object-contain'
+                  className='rounded-lg object-cover'
                   priority
                   sizes='(max-width: 768px) 100vw, (max-width: 1200px) 80vw, 70vw'
                 />

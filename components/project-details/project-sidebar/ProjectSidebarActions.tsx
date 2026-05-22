@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import {
   ArrowUp,
   DollarSign,
@@ -24,6 +25,8 @@ export function ProjectSidebarActions({
   crowdfund,
 }: ProjectSidebarActionsProps) {
   const [isSharePopupOpen, setIsSharePopupOpen] = useState(false);
+  const searchParams = useSearchParams();
+  const isSubmission = searchParams.get('type') === 'submission';
 
   const handleShareClick = () => {
     setIsSharePopupOpen(true);
@@ -109,13 +112,15 @@ export function ProjectSidebarActions({
         </BoundlessButton>
       )}
 
-      <div className='flex-1'>
-        <FollowButton
-          entityType='PROJECT'
-          entityId={project.id}
-          className='h-12 w-full'
-        />
-      </div>
+      {!isSubmission && (
+        <div className='flex-1'>
+          <FollowButton
+            entityType='PROJECT'
+            entityId={project.id}
+            className='h-12 w-full'
+          />
+        </div>
+      )}
 
       <div className='relative'>
         <BoundlessButton

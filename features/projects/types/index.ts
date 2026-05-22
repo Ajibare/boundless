@@ -170,6 +170,12 @@ export interface CrowdfundingProject {
   _count?: {
     votes: number;
   };
+  // Hackathon-submission-only fields, present when the page is rendered with
+  // ?type=submission. Lets the shared sidebar header surface the submission's
+  // rank chip and raw submission status (SUBMITTED / SHORTLISTED / etc.)
+  // without changing the broader ProjectStatus union.
+  submissionRank?: number | null;
+  submissionStatus?: string | null;
 }
 
 export interface Crowdfunding {

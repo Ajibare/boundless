@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import Empty from './Empty';
 import Image from 'next/image';
 import { CrowdfundingProject, Crowdfunding } from '@/features/projects/types';
@@ -40,6 +41,11 @@ interface ProjectVotersProps {
 
 const ProjectVoters = ({ project, crowdfund }: ProjectVotersProps) => {
   const { user } = useOptionalAuth();
+  const searchParams = useSearchParams();
+  const isSubmission = searchParams.get('type') === 'submission';
+  const entityType = isSubmission
+    ? VoteEntityType.HACKATHON_SUBMISSION
+    : VoteEntityType.CROWDFUNDING_CAMPAIGN;
   const [voteStats, setVoteStats] = useState<VoteStats>({
     upvotes: 0,
     downvotes: 0,
@@ -63,7 +69,7 @@ const ProjectVoters = ({ project, crowdfund }: ProjectVotersProps) => {
 
   useVoteRealtime(
     {
-      entityType: VoteEntityType.CROWDFUNDING_CAMPAIGN,
+      entityType,
       entityId: projectId || '',
       enabled: !!projectId,
     },
@@ -116,7 +122,7 @@ const ProjectVoters = ({ project, crowdfund }: ProjectVotersProps) => {
         const response = await getProjectVotes(projectId, {
           limit: 20,
           offset: 0,
-          entityType: VoteEntityType.CROWDFUNDING_CAMPAIGN,
+          entityType,
           includeVoters: true,
         });
 
@@ -137,10 +143,7 @@ const ProjectVoters = ({ project, crowdfund }: ProjectVotersProps) => {
           });
           setVoters(response.data.voters);
         } else {
-          const countsResponse = await apiGetVoteCounts(
-            projectId,
-            VoteEntityType.CROWDFUNDING_CAMPAIGN
-          );
+          const countsResponse = await apiGetVoteCounts(projectId, entityType);
           setVoteStats({
             upvotes: countsResponse.upvotes,
             downvotes: countsResponse.downvotes,
@@ -160,7 +163,7 @@ const ProjectVoters = ({ project, crowdfund }: ProjectVotersProps) => {
     };
 
     fetchInitialVoteData();
-  }, [projectId]);
+  }, [projectId, entityType]);
 
   const handleVote = async (voteType: VoteType) => {
     if (!projectId || voting) return;
@@ -171,7 +174,7 @@ const ProjectVoters = ({ project, crowdfund }: ProjectVotersProps) => {
     try {
       await createVote({
         projectId,
-        entityType: VoteEntityType.CROWDFUNDING_CAMPAIGN,
+        entityType,
         voteType,
       });
 
