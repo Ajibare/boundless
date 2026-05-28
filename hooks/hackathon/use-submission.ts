@@ -51,6 +51,61 @@ export type SubmissionFormData = Omit<
   }>;
 };
 
+/**
+ * Fields the backend `UpdateSubmissionDto` accepts. Backend rejects any
+ * other field after PR #187 (forbidNonWhitelisted: true). Keep this list
+ * in sync with src/modules/hackathons/dto/submission.dto.ts.
+ *
+ * Notably NOT on update: participationType, teamId, teamName,
+ * organizationId, hackathonId, participantId. Those are set on create
+ * only and cannot be changed via PATCH.
+ */
+const UPDATE_SUBMISSION_FIELDS: readonly (keyof SubmissionFormData)[] = [
+  'projectName',
+  'category',
+  'description',
+  'logo',
+  'banner',
+  'videoUrl',
+  'introduction',
+  'links',
+  'socialLinks',
+  'teamMembers',
+  'trackIds',
+  'trackAnswers',
+  'tagline',
+  'builtWith',
+  'screenshots',
+  'license',
+  'codeAttested',
+] as const;
+
+function pickUpdateSubmissionFields(
+  data: Partial<SubmissionFormData>
+): Partial<SubmissionFormData> {
+  const out: Partial<SubmissionFormData> = {};
+  for (const key of UPDATE_SUBMISSION_FIELDS) {
+    if (key in data && data[key] !== undefined) {
+      // The index type below is awkward because SubmissionFormData has
+      // many optional fields with different shapes. The cast is safe
+      // because each `key` is a real key of SubmissionFormData.
+      (out as Record<string, unknown>)[key] = data[key];
+    }
+  }
+  // teamMembers entries must match the backend TeamMemberDto exactly:
+  // { userId, name, username?, role } — no `email`, no `avatar`. Project
+  // each entry down to that shape so unknown fields never reach the wire.
+  if (Array.isArray(out.teamMembers)) {
+    out.teamMembers = out.teamMembers.map(member => ({
+      userId: member.userId,
+      name: member.name,
+      role: member.role,
+      ...(member.username ? { username: member.username } : {}),
+    }));
+  }
+  return out;
+}
+
 interface UseSubmissionOptions {
   hackathonSlugOrId: string;
   organizationId?: string;
@@ -170,7 +225,11 @@ export function useSubmission({
       setError(null);
 
       try {
-        const response = await updateSubmission(submissionId, data);
+        // Strip create-only fields (participationType, teamId, teamName,
+        // organizationId, ...) and per-team-member email so the request
+        // matches UpdateSubmissionDto under forbidNonWhitelisted: true.
+        const payload = pickUpdateSubmissionFields(data);
+        const response = await updateSubmission(submissionId, payload);
 
         if (response?.success && response?.data) {
           setSubmission(response.data);
