@@ -118,6 +118,28 @@ export interface PrizeTier {
   trackId?: string;
 }
 
+/** A fundable placement within a Prize (the entity read path). */
+export interface PrizePlacementEntity {
+  id: string;
+  position: number;
+  label: string | null;
+  amount: string;
+  currency: string;
+  passMark: number;
+}
+
+/** Prize entity exposed on public/detail responses alongside the legacy
+ *  prizeTiers shadow. Read entity-first via `effectivePrizeTiers()`. */
+export interface PrizeEntity {
+  id: string;
+  name: string;
+  description: string | null;
+  displayOrder: number;
+  /** Linked track ids; empty = overall prize. */
+  trackIds: string[];
+  placements: PrizePlacementEntity[];
+}
+
 export type HackathonPrizeStructure =
   | 'OVERALL_ONLY'
   | 'OVERALL_AND_TRACKS'
@@ -207,6 +229,8 @@ export type Hackathon = {
 
   status:
     | 'DRAFT'
+    // Between escrow publish-request and on-chain create_event settling.
+    | 'DRAFT_AWAITING_FUNDING'
     | 'UPCOMING'
     | 'ACTIVE'
     | 'JUDGING'
@@ -277,6 +301,10 @@ export type Hackathon = {
     trackId?: string;
   }>;
 
+  /** Prize entity (read path), exposed alongside prizeTiers. Read via
+   *  effectivePrizeTiers(); empty or absent on un-migrated hackathons. */
+  prizes?: PrizeEntity[];
+
   /** P1 of track-based prize structure. Defaults to OVERALL_ONLY when omitted. */
   prizeStructure?: HackathonPrizeStructure;
   /** Cap on tracks a submission may opt into. Defaults to 3. */
@@ -323,10 +351,8 @@ export type Hackathon = {
     followers: number;
   };
 
-  contractId?: string;
-  escrowAddress?: string;
-  transactionHash?: string;
-  escrowDetails?: object;
+  /** Whether the on-chain escrow event exists (publish completed). */
+  escrowReady?: boolean;
 };
 
 export interface HackathonStatistics {
@@ -355,10 +381,6 @@ export interface HackathonTimeSeriesData {
 // Request/Response Types
 export interface PublishHackathonRequest extends Hackathon {
   draftId?: string;
-  contractId?: string;
-  escrowAddress?: string;
-  transactionHash?: string;
-  escrowDetails?: object;
 }
 
 export type UpdateHackathonRequest = Partial<Hackathon>;

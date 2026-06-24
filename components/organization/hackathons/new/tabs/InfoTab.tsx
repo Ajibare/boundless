@@ -21,6 +21,7 @@ import { toast } from 'sonner';
 import { useLocationData } from '@/hooks/use-location-data';
 import { useGeocoding } from '@/hooks/use-geocoding';
 import { Loader2 } from 'lucide-react';
+import RegenerateSectionButton from '../RegenerateSectionButton';
 
 const MDEditor = dynamic(
   () => import('@uiw/react-md-editor').then(mod => mod.default),
@@ -103,6 +104,17 @@ export default function InfoTab({
     watch: form.watch,
   });
 
+  // Apply an AI-regenerated description to the markdown editor field.
+  const applyRegeneratedDescription = (data: Record<string, unknown>) => {
+    const description = data.description;
+    if (typeof description === 'string') {
+      form.setValue('description', description, {
+        shouldValidate: true,
+        shouldDirty: true,
+      });
+    }
+  };
+
   const onSubmit = async (data: InfoFormData) => {
     try {
       if (onSave) {
@@ -172,9 +184,15 @@ export default function InfoTab({
           name='description'
           render={({ field }) => (
             <FormItem>
-              <FormLabel className='text-sm font-medium text-white'>
-                Description <span className='text-red-500'>*</span>
-              </FormLabel>
+              <div className='flex items-center justify-between gap-3'>
+                <FormLabel className='text-sm font-medium text-white'>
+                  Description <span className='text-red-500'>*</span>
+                </FormLabel>
+                <RegenerateSectionButton
+                  section='description'
+                  onApply={applyRegeneratedDescription}
+                />
+              </div>
               <FormControl>
                 <div className='overflow-hidden rounded-xl border border-zinc-800'>
                   <MDEditor

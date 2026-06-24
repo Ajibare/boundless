@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { EntityType, UseFollowReturn } from '@/types/follow';
 import { followApi } from '@/lib/api/follow';
 import { useOptionalAuth } from './use-auth';
@@ -9,31 +10,30 @@ export const useFollow = (
   initialIsFollowing = false
 ): UseFollowReturn => {
   const { user } = useOptionalAuth();
-  const [isFollowing, setIsFollowing] = useState(initialIsFollowing);
+  const queryClient = useQueryClient();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const checkFollowStatus = useCallback(async () => {
-    try {
+  // Shared, cached follow-status query. Replaces a manual useEffect that re-ran
+  // whenever the `user` object identity changed (every auth refresh) and once
+  // per component using this hook — which rate-limited /follows/.../check (429).
+  // The stable string key dedupes across components and caches the result; the
+  // global QueryClient config doesn't retry 4xx.
+  const statusQuery = useQuery({
+    queryKey: ['follow', entityType, entityId],
+    queryFn: async () => {
       const response = await followApi.checkFollowStatus(entityType, entityId);
-      // Backend returns { success: true, data: { isFollowing: true }, ... }
-      // api.get returns { data: { success: true, data: { isFollowing: true } }, ... }
-      // Backend returns { success: true, data: { isFollowing: true }, ... }
-      // api.get returns { data: { success: true, data: { isFollowing: true } }, ... }
-      const isFollowingStatus =
-        response.data?.data?.isFollowing ?? response.data?.isFollowing ?? false;
-      setIsFollowing(isFollowingStatus);
-    } catch {
-      // Silently fail for status check - don't set error state
-    }
-  }, [entityType, entityId]);
+      // Backend returns { success, data: { isFollowing } }; the axios layer
+      // wraps it once more, so both shapes are unwrapped here.
+      return (
+        response.data?.data?.isFollowing ?? response.data?.isFollowing ?? false
+      );
+    },
+    enabled: !!user && !!entityId,
+    staleTime: 60_000,
+  });
 
-  // Check follow status on mount if user is authenticated
-  useEffect(() => {
-    if (user && entityId) {
-      checkFollowStatus();
-    }
-  }, [user, entityId, checkFollowStatus]);
+  const isFollowing = statusQuery.data ?? initialIsFollowing;
 
   const follow = useCallback(async () => {
     if (!user) {
@@ -46,7 +46,7 @@ export const useFollow = (
 
     try {
       await followApi.followEntity(entityType, entityId);
-      setIsFollowing(true);
+      queryClient.setQueryData(['follow', entityType, entityId], true);
     } catch (err: unknown) {
       const errorMessage =
         err instanceof Error ? err.message : 'Failed to follow';
@@ -55,7 +55,7 @@ export const useFollow = (
     } finally {
       setIsLoading(false);
     }
-  }, [user, entityType, entityId]);
+  }, [user, entityType, entityId, queryClient]);
 
   const unfollow = useCallback(async () => {
     if (!user) {
@@ -68,7 +68,7 @@ export const useFollow = (
 
     try {
       await followApi.unfollowEntity(entityType, entityId);
-      setIsFollowing(false);
+      queryClient.setQueryData(['follow', entityType, entityId], false);
     } catch (err: unknown) {
       const errorMessage =
         err instanceof Error ? err.message : 'Failed to unfollow';
@@ -77,7 +77,7 @@ export const useFollow = (
     } finally {
       setIsLoading(false);
     }
-  }, [user, entityType, entityId]);
+  }, [user, entityType, entityId, queryClient]);
 
   const toggleFollow = useCallback(async () => {
     if (isFollowing) {

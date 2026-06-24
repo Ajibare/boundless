@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { BoundlessButton } from '@/components/buttons';
 import { IconUsers, IconUserPlus, IconLogout } from '@tabler/icons-react';
@@ -16,6 +17,9 @@ import SharePopover from '@/components/common/SharePopover';
 import { toast } from 'sonner';
 import { useRequireAuthForAction } from '@/hooks/use-require-auth-for-action';
 import { useHackathonStatus } from '@/hooks/hackathon/use-hackathon-status';
+import RegistrationQuestionsDialog, {
+  useRegistrationQuestions,
+} from '../RegistrationQuestionsDialog';
 
 const ActionButtons = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -28,6 +32,8 @@ const ActionButtons = () => {
 
   const joinMutation = useJoinHackathon(slug);
   const leaveMutation = useLeaveHackathon(slug);
+  const { data: registrationQuestions = [] } = useRegistrationQuestions(slug);
+  const [regDialogOpen, setRegDialogOpen] = useState(false);
 
   const { status: hackathonStatus } = useHackathonStatus(
     hackathon?.startDate,
@@ -55,15 +61,35 @@ const ActionButtons = () => {
   const hasConflictingRole =
     viewerRole === 'organizer' || viewerRole === 'judge';
 
+  const doJoin = async (answers?: Record<string, string | string[]>) => {
+    await joinMutation.mutateAsync(answers);
+    await refreshCurrentHackathon();
+    toast.success('Successfully joined the hackathon!');
+  };
+
   const handleJoin = withAuth(async () => {
+    // If the organizer set registration questions, collect them first.
+    if (registrationQuestions.length > 0) {
+      setRegDialogOpen(true);
+      return;
+    }
     try {
-      await joinMutation.mutateAsync();
-      await refreshCurrentHackathon();
-      toast.success('Successfully joined the hackathon!');
+      await doJoin();
     } catch (error: any) {
       toast.error(error?.message || 'Failed to join hackathon');
     }
   });
+
+  const handleRegisterSubmit = async (
+    answers: Record<string, string | string[]>
+  ) => {
+    try {
+      await doJoin(answers);
+      setRegDialogOpen(false);
+    } catch (error: any) {
+      toast.error(error?.message || 'Failed to join hackathon');
+    }
+  };
 
   const handleLeave = withAuth(async () => {
     try {
@@ -152,6 +178,14 @@ const ActionButtons = () => {
 
         <SharePopover title={hackathon?.name} className='relative shrink-0' />
       </div>
+
+      <RegistrationQuestionsDialog
+        open={regDialogOpen}
+        onOpenChange={setRegDialogOpen}
+        questions={registrationQuestions}
+        submitting={joinMutation.isPending}
+        onSubmit={handleRegisterSubmit}
+      />
     </div>
   );
 };

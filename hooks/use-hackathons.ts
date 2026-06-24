@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   initializeDraft,
   updateDraftStep,
-  publishDraft,
+  updateDraftSteps,
   getDraft,
   getDrafts,
   updateHackathon,
@@ -78,11 +78,10 @@ export interface UseHackathonsReturn {
     data: any,
     autoSave?: boolean
   ) => Promise<HackathonDraft>;
-  publishDraftAction: (
+  updateDraftStepsAction: (
     draftId: string,
-    organizationId: string,
-    options?: { skipAnnouncement?: boolean; announcementSubject?: string }
-  ) => Promise<Hackathon>;
+    steps: { step: string; data: any }[]
+  ) => Promise<HackathonDraft>;
   fetchDraft: (draftId: string) => Promise<void>;
   fetchDrafts: (page?: number, limit?: number) => Promise<void>;
 
@@ -330,9 +329,29 @@ export function useHackathons(
         setCurrentHackathon(response.data);
         setCurrentDraft(null);
       } catch (error) {
-        const errorMessage =
-          error instanceof Error ? error.message : 'Failed to fetch hackathon';
-        setCurrentError(errorMessage);
+        // The public hackathon GET 404s for non-live hackathons. Fall back to
+        // the org-scoped draft GET so a hackathon mid-publish
+        // (DRAFT_AWAITING_FUNDING) still renders on the management page, where
+        // the publish-status banner resumes it.
+        try {
+          const draftRes = await getDraft(organizationId, hackathonId);
+          const draft = draftRes.data;
+          const mapped = {
+            id: draft.id,
+            name: draft.data?.information?.name || 'Untitled Hackathon',
+            slug: draft.data?.information?.slug || '',
+            status: draft.status,
+            organizationId,
+          } as unknown as Hackathon;
+          setCurrentHackathon(mapped);
+          setCurrentDraft(draft);
+        } catch {
+          const errorMessage =
+            error instanceof Error
+              ? error.message
+              : 'Failed to fetch hackathon';
+          setCurrentError(errorMessage);
+        }
       } finally {
         setCurrentLoading(false);
         isFetchingCurrentRef.current = false;
@@ -445,46 +464,44 @@ export function useHackathons(
     [organizationId, currentDraft]
   );
 
-  // Publish Draft (New API)
-  const publishDraftAction = useCallback(
+  // Update several draft steps in one transactional PATCH (New API)
+  const updateDraftStepsAction = useCallback(
     async (
       draftId: string,
-      organizationId: string,
-      options?: { skipAnnouncement?: boolean; announcementSubject?: string }
-    ): Promise<Hackathon> => {
-      setHackathonsLoading(true);
-      setHackathonsError(null);
+      steps: { step: string; data: any }[]
+    ): Promise<HackathonDraft> => {
+      if (!organizationId) {
+        throw new Error('Organization ID is required');
+      }
+
+      setDraftsLoading(true);
+      setDraftsError(null);
 
       try {
-        const response = await publishDraft(draftId, organizationId, options);
-
-        // Extract data from API response wrapper if it exists
-        const hackathon = response?.data || response;
-
-        if (!hackathon || !hackathon.id) {
-          throw new Error('Invalid publish response: missing hackathon ID');
+        const response = await updateDraftSteps(organizationId, draftId, steps);
+        if (response.data) {
+          setDrafts(prev =>
+            prev.map(draft => (draft.id === draftId ? response.data! : draft))
+          );
+          if (currentDraft?.id === draftId) {
+            setCurrentDraft(response.data);
+          }
+          return response.data;
+        } else {
+          throw new Error('No draft data received');
         }
-
-        setHackathons(prev => [hackathon, ...prev]);
-        setCurrentHackathon(hackathon);
-        // Optionally remove from drafts if it was a draft
-        if (currentDraft) {
-          setDrafts(prev => prev.filter(d => d.id !== currentDraft.id));
-          setCurrentDraft(null);
-        }
-        return hackathon;
       } catch (error) {
         const errorMessage =
           error instanceof Error
             ? error.message
-            : 'Failed to publish hackathon';
-        setHackathonsError(errorMessage);
+            : 'Failed to update draft steps';
+        setDraftsError(errorMessage);
         throw error;
       } finally {
-        setHackathonsLoading(false);
+        setDraftsLoading(false);
       }
     },
-    [currentDraft]
+    [organizationId, currentDraft]
   );
 
   // Update Hackathon
@@ -651,7 +668,7 @@ export function useHackathons(
     // Actions - Drafts
     initializeDraftAction,
     updateDraftStepAction,
-    publishDraftAction,
+    updateDraftStepsAction,
     fetchDraft,
     fetchDrafts,
 

@@ -71,7 +71,7 @@ export default function SettingsPage() {
       banner: h.banner,
       description: h.description,
       categories: h.categories,
-      venueType: h.venueType.toLowerCase() as any,
+      venueType: h.venueType?.toLowerCase() as any,
       country: h.country,
       state: h.state,
       city: h.city,
@@ -104,23 +104,24 @@ export default function SettingsPage() {
 
   const getParticipantData = (h: Hackathon | null) => {
     if (!h) return undefined;
+    const enabledTabs = h.enabledTabs ?? [];
     return {
-      participantType: h.participantType.toLowerCase() as any,
+      participantType: h.participantType?.toLowerCase() as any,
       teamMin: h.teamMin,
       teamMax: h.teamMax,
       require_github: h.requireGithub,
       require_demo_video: h.requireDemoVideo,
       require_other_links: h.requireOtherLinks,
-      detailsTab: h.enabledTabs.includes('detailsTab'),
-      participantsTab: h.enabledTabs.includes('participantsTab'),
-      resourcesTab: h.enabledTabs.includes('resourcesTab'),
-      submissionTab: h.enabledTabs.includes('submissionTab'),
-      announcementsTab: h.enabledTabs.includes('announcementsTab'),
-      discussionTab: h.enabledTabs.includes('discussionTab'),
-      winnersTab: h.enabledTabs.includes('winnersTab'),
-      sponsorsTab: h.enabledTabs.includes('sponsorsTab'),
-      joinATeamTab: h.enabledTabs.includes('joinATeamTab'),
-      rulesTab: h.enabledTabs.includes('rulesTab'),
+      detailsTab: enabledTabs.includes('detailsTab'),
+      participantsTab: enabledTabs.includes('participantsTab'),
+      resourcesTab: enabledTabs.includes('resourcesTab'),
+      submissionTab: enabledTabs.includes('submissionTab'),
+      announcementsTab: enabledTabs.includes('announcementsTab'),
+      discussionTab: enabledTabs.includes('discussionTab'),
+      winnersTab: enabledTabs.includes('winnersTab'),
+      sponsorsTab: enabledTabs.includes('sponsorsTab'),
+      joinATeamTab: enabledTabs.includes('joinATeamTab'),
+      rulesTab: enabledTabs.includes('rulesTab'),
     };
   };
 
@@ -128,15 +129,7 @@ export default function SettingsPage() {
     if (!h) return undefined;
     const adv = h.metadata?.advancedSettings;
     return {
-      isPublic: adv?.isPublic ?? true,
-      allowLateRegistration: adv?.allowLateRegistration ?? false,
-      requireApproval: adv?.requireApproval ?? false,
       maxParticipants: adv?.maxParticipants,
-      customDomain: adv?.customDomain || '',
-      enableDiscord: adv?.enableDiscord ?? !!h.discord,
-      discordInviteLink: adv?.discordInviteLink || h.discord || '',
-      enableTelegram: adv?.enableTelegram ?? !!h.telegram,
-      telegramInviteLink: adv?.telegramInviteLink || h.telegram || '',
     };
   };
 
@@ -365,6 +358,7 @@ export default function SettingsPage() {
               <PartnersSettingsTab
                 organizationId={organizationId}
                 hackathonId={hackathonId}
+                escrowReady={hackathon?.escrowReady}
               />
             </TabsContent>
 
@@ -373,6 +367,9 @@ export default function SettingsPage() {
                 organizationId={organizationId}
                 hackathonId={hackathonId}
                 initialData={getAdvancedData(hackathon)}
+                initialVisibility={
+                  hackathon?.visibility === 'PRIVATE' ? 'PRIVATE' : 'PUBLIC'
+                }
                 onSaveSuccess={fetchHackathon}
               />
             </TabsContent>

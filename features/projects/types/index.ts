@@ -40,6 +40,11 @@ export interface Milestone {
   fundingPercentage: number;
   title: string;
   orderIndex?: string;
+  claimedAt?: string | null;
+  completedAt?: string | null;
+  submittedAt?: string | null;
+  rejectionFeedback?: string | null;
+  resubmissionDeadline?: string | null;
 }
 
 export interface User {
@@ -178,6 +183,29 @@ export interface CrowdfundingProject {
   submissionStatus?: string | null;
 }
 
+export type CrowdfundingV2Status =
+  | 'DRAFT'
+  | 'SUBMITTED_FOR_REVIEW'
+  | 'REVIEW_REJECTED'
+  | 'REVIEW_APPROVED'
+  | 'VOTING'
+  | 'VOTE_FAILED'
+  | 'VOTE_PASSED'
+  | 'PUBLISHING'
+  | 'FUNDING'
+  | 'COMPLETED'
+  | 'CANCELLED'
+  | 'PAUSED'
+  | 'FAILED';
+
+export interface CrowdfundingReview {
+  id: string;
+  action: 'NOTE' | 'REQUEST_REVISION' | 'APPROVED' | 'REJECTED';
+  reason?: string;
+  details?: string;
+  createdAt: string;
+}
+
 export interface Crowdfunding {
   id: string;
   projectId: string;
@@ -194,6 +222,7 @@ export interface Crowdfunding {
   milestones: Milestone[];
   stakeholders: any | null;
   trustlessWorkStatus: string;
+  v2Status?: CrowdfundingV2Status;
   escrowAddress: string;
   escrowType: string;
   escrowDetails: any | null;
@@ -202,6 +231,10 @@ export interface Crowdfunding {
   createdAt: string;
   updatedAt: string;
   project: CrowdfundingProject;
+  reviews?: CrowdfundingReview[];
+  voteUpCount?: number;
+  voteDownCount?: number;
+  votingEndDate?: string;
   // Vote-related properties for UI compatibility
   totalVotes?: number;
   thresholdVotes?: number;

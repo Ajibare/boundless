@@ -7,6 +7,7 @@ import {
   MoreHorizontal,
   RefreshCw,
   RotateCcw,
+  UploadCloud,
   UserPlus,
   X,
 } from 'lucide-react';
@@ -31,6 +32,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import EmptyState from '@/components/EmptyState';
 import { InviteJudgeDialog } from './InviteJudgeDialog';
+import ImportJudgesCsvDialog from './ImportJudgesCsvDialog';
 import {
   useCancelInvitation,
   useOrgJudgeInvitations,
@@ -68,6 +70,7 @@ export function OrganizerJudgesPanel({
   onJudgesChanged?: () => void;
 }) {
   const [inviteOpen, setInviteOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
   const [cancelTarget, setCancelTarget] =
     useState<OrganizerInvitationSummary | null>(null);
 
@@ -133,12 +136,21 @@ export function OrganizerJudgesPanel({
             Refresh
           </Button>
           {canManage && (
-            <Button
-              onClick={() => setInviteOpen(true)}
-              className='bg-primary hover:bg-primary/90 text-primary-foreground'
-            >
-              <UserPlus className='mr-2 h-4 w-4' /> Invite judge
-            </Button>
+            <>
+              <Button
+                variant='outline'
+                onClick={() => setImportOpen(true)}
+                className='border-white/10 bg-transparent text-gray-300 hover:bg-white/5'
+              >
+                <UploadCloud className='mr-2 h-4 w-4' /> Import CSV
+              </Button>
+              <Button
+                onClick={() => setInviteOpen(true)}
+                className='bg-primary hover:bg-primary/90 text-primary-foreground'
+              >
+                <UserPlus className='mr-2 h-4 w-4' /> Invite judge
+              </Button>
+            </>
           )}
         </div>
       </div>
@@ -273,6 +285,14 @@ export function OrganizerJudgesPanel({
         onOpenChange={setInviteOpen}
         organizationId={organizationId}
         hackathonId={hackathonId}
+      />
+
+      <ImportJudgesCsvDialog
+        open={importOpen}
+        onOpenChange={setImportOpen}
+        organizationId={organizationId}
+        hackathonId={hackathonId}
+        onImported={refetchInvitations}
       />
 
       <AlertDialog

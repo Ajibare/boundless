@@ -1,5 +1,4 @@
 import { HackathonDataProvider } from '@/lib/providers/hackathonProvider';
-import { OrganizationProvider } from '@/lib/providers/OrganizationProvider';
 import { use } from 'react';
 
 interface HackathonLayoutProps {
@@ -15,11 +14,13 @@ export default function HackathonLayout({
 }: HackathonLayoutProps) {
   const resolvedParams = use(params);
 
+  // No OrganizationProvider here: the participant hackathons pages are public
+  // and nothing in this subtree consumes org context. Mounting it only fired
+  // stray getMe / getOrganization calls on browse pages. Org-management routes
+  // keep their own provider under /organizations.
   return (
-    <OrganizationProvider>
-      <HackathonDataProvider hackathonSlug={resolvedParams.slug ?? ''}>
-        {children}
-      </HackathonDataProvider>
-    </OrganizationProvider>
+    <HackathonDataProvider hackathonSlug={resolvedParams.slug ?? ''}>
+      {children}
+    </HackathonDataProvider>
   );
 }

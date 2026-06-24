@@ -60,6 +60,7 @@ export default function PartnerContributePage() {
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [confirmedTxHash, setConfirmedTxHash] = useState<string | null>(null);
+  const [settling, setSettling] = useState(false);
 
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
   const [connecting, setConnecting] = useState(false);
@@ -152,13 +153,10 @@ export default function PartnerContributePage() {
       if (!prepared)
         throw new Error('Backend did not return a transaction to sign');
 
-      const signed = await freighterSignTransaction(
-        prepared.unsignedTransaction,
-        {
-          networkPassphrase: prepared.networkPassphrase,
-          address: signerAddress,
-        }
-      );
+      const signed = await freighterSignTransaction(prepared.unsignedXdr, {
+        networkPassphrase: prepared.networkPassphrase,
+        address: signerAddress,
+      });
       if (signed.error || !signed.signedTxXdr) {
         throw new Error(
           signed.error?.message || 'Transaction signing was rejected'
@@ -169,10 +167,13 @@ export default function PartnerContributePage() {
         token,
         signed.signedTxXdr
       );
-      const updated = submitRes.data;
-      if (updated?.txHash) setConfirmedTxHash(updated.txHash);
+      const submitted = submitRes.data;
+      if (submitted?.txHash) setConfirmedTxHash(submitted.txHash);
+      setSettling(true);
 
-      toast.success('Thanks! Your contribution was recorded.');
+      toast.success(
+        'Submitted! Your contribution is settling on-chain and will be confirmed shortly.'
+      );
       const refreshed = await getPartnerInvitation(token);
       setInvitation(refreshed.data ?? null);
     } catch (err: unknown) {
@@ -408,7 +409,7 @@ export default function PartnerContributePage() {
                   number={3}
                   state={stepStates[2]}
                   title='Funds in the prize pool'
-                  description='Your contribution is recorded on-chain and credited to the prize pool. Trustless Work releases it to winners.'
+                  description='Your contribution is recorded on-chain and credited to the prize pool, then released to winners when results are published.'
                 />
               </div>
             </div>
@@ -418,6 +419,12 @@ export default function PartnerContributePage() {
               <div className='rounded-2xl border border-white/5 bg-[#0c0d0f] p-6'>
                 {isConfirmed ? (
                   <ConfirmedPanel txHash={txHash} />
+                ) : settling ? (
+                  <ClosedPanel
+                    icon={<Clock className='text-primary h-5 w-5' />}
+                    title='Settling on-chain'
+                    body='Your contribution was submitted and is settling on-chain. It will show as confirmed here shortly.'
+                  />
                 ) : isCancelled ? (
                   <ClosedPanel
                     icon={<XCircle className='h-5 w-5 text-gray-400' />}
@@ -518,10 +525,7 @@ export default function PartnerContributePage() {
 
         {/* Footer */}
         <div className='flex flex-col gap-3 border-t border-white/5 px-6 py-5 text-xs text-gray-600 sm:flex-row sm:items-center sm:justify-between sm:px-10'>
-          <div>
-            © {new Date().getFullYear()} Boundless. Powered by Trustless Work on
-            Stellar.
-          </div>
+          <div>© {new Date().getFullYear()} Boundless. Built on Stellar.</div>
           <div className='flex items-center gap-5'>
             {hackathon?.slug && (
               <Link
