@@ -13,8 +13,8 @@ export const WalletConnectionWarning: React.FC = () => {
             Wallet Not Connected
           </h4>
           <p className='text-xs text-yellow-300/80'>
-            You need to connect your wallet to publish the hackathon and lock
-            funds in escrow.
+            You need to connect your wallet to publish the hackathon and set
+            aside the prize funds.
           </p>
         </div>
       </div>

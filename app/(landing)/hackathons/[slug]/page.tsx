@@ -1,6 +1,8 @@
 import { Metadata } from 'next';
+import { cookies } from 'next/headers';
 import { notFound } from 'next/navigation';
 import { getHackathon } from '@/lib/api/hackathon';
+import AccessGate from './components/AccessGate';
 import { generateHackathonMetadata } from '@/lib/metadata';
 import { HackathonDataProvider } from '@/lib/providers/hackathonProvider';
 import Banner from './components/Banner';
@@ -24,12 +26,13 @@ function isApiNotFound(err: unknown): boolean {
 
 async function fetchHackathonWithRetry(
   slug: string,
+  accessToken?: string,
   retries = 2
 ): Promise<GetHackathonResponse> {
   let lastErr: unknown;
   for (let attempt = 0; attempt <= retries; attempt++) {
     try {
-      return await getHackathon(slug);
+      return await getHackathon(slug, accessToken);
     } catch (err) {
       lastErr = err;
       if (isApiNotFound(err)) throw err;
@@ -67,10 +70,11 @@ export async function generateMetadata({
 
 export default async function HackathonPage({ params }: HackathonPageProps) {
   const { slug } = await params;
+  const accessToken = (await cookies()).get(`hx_access_${slug}`)?.value;
 
   let response: GetHackathonResponse;
   try {
-    response = await fetchHackathonWithRetry(slug);
+    response = await fetchHackathonWithRetry(slug, accessToken);
   } catch (err) {
     if (isApiNotFound(err)) notFound();
     throw err;
@@ -81,6 +85,17 @@ export default async function HackathonPage({ params }: HackathonPageProps) {
   }
 
   const hackathon = response.data;
+
+  // Private hackathon the viewer has not unlocked: prompt for the password.
+  if ((hackathon as { locked?: boolean }).locked) {
+    return (
+      <AccessGate
+        slug={slug}
+        name={hackathon.name}
+        description={hackathon.tagline}
+      />
+    );
+  }
 
   return (
     <HackathonDataProvider hackathonSlug={slug} initialData={hackathon}>

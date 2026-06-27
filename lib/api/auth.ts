@@ -12,9 +12,30 @@ import { GetMeResponse } from '@/lib/api/types';
  * For client-side usage, cookies are automatically sent via withCredentials
  * For server-side usage, use getMeServer() from '@/lib/api/auth-server' instead
  */
+/**
+ * Canonical React Query key for the current user (`/users/me`). Shared by the
+ * auth-profile hook (use-auth) and OrganizationProvider so a single getMe serves
+ * both the session profile and the org list, instead of two cache entries each
+ * hitting the same endpoint.
+ */
+export const ME_QUERY_KEY = ['users', 'me'] as const;
+
+let inFlightGetMe: Promise<GetMeResponse> | null = null;
 export const getMe = async (): Promise<GetMeResponse> => {
-  const res = await api.get<ApiResponse<GetMeResponse>>('/users/me');
-  return res.data.data as GetMeResponse;
+  // Single-flight: concurrent callers (e.g. the auth store and OrganizationProvider
+  // both initializing on a page load) share one in-flight `/users/me` request
+  // instead of each firing their own. Cleared once it settles, so later
+  // (sequential) calls still fetch fresh.
+  if (inFlightGetMe) return inFlightGetMe;
+  inFlightGetMe = (async () => {
+    const res = await api.get<ApiResponse<GetMeResponse>>('/users/me');
+    return res.data.data as GetMeResponse;
+  })();
+  try {
+    return await inFlightGetMe;
+  } finally {
+    inFlightGetMe = null;
+  }
 };
 
 /**
@@ -55,7 +76,15 @@ export const getAuthHeaders = (): Record<string, string> => {
 };
 
 /**
- * Update user profile request interface - matches API payload specification
+ * Update user profile request interface. Mirrors the backend
+ * `UpdateProfileDto` (src/modules/users/dto/update-profile.dto.ts).
+ *
+ * Notably absent: a `preferences` block. The backend has dedicated
+ * endpoints for theme / language / timezone / notification toggles
+ * (see updateAppearanceSettings, updateNotificationsSettings,
+ * updateUserSettings in lib/api/user/settings.ts). Sending a
+ * `preferences` field here would be rejected as an unknown property
+ * once the backend enables forbidNonWhitelisted (PR #187).
  */
 export interface UpdateUserProfileRequest {
   bio?: string;
@@ -68,13 +97,6 @@ export interface UpdateUserProfileRequest {
     twitter?: string;
     linkedin?: string;
     discord?: string;
-  };
-  preferences?: {
-    theme?: 'light' | 'dark' | 'auto';
-    language?: string;
-    timezone?: string;
-    emailNotifications?: boolean;
-    pushNotifications?: boolean;
   };
 }
 

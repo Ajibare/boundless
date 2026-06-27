@@ -11,7 +11,6 @@ import {
   useNavigationLoading,
 } from '@/lib/providers';
 import { cn } from '@/lib/utils';
-import NewHackathonSidebar from '@/components/organization/hackathons/new/NewHackathonSidebar';
 import HackathonSidebar from '@/components/organization/hackathons/details/HackathonSidebar';
 import HackathonNavigationLoader from '@/components/organization/hackathons/details/HackathonNavigationLoader';
 
@@ -24,13 +23,12 @@ export default function OrganizationsLayout({
 
   const showOrganizationSidebar =
     pathname !== '/organizations' && pathname.startsWith('/organizations');
-  const showNewHackathonSidebar = pathname.includes('/hackathons/new');
   const showNewGrantSidebar = pathname.includes('/grants/new');
-  // Show hackathon sidebar only on hackathon detail pages (not on list or new pages)
+  // One shell for the whole hackathon lifecycle: create (/new), draft editing
+  // (/drafts/[id]), and published management (/[hackathonId]/...). Everything
+  // under /hackathons/ except the list page itself.
   const showHackathonSidebar =
-    pathname.includes('/hackathons/') &&
-    !pathname.endsWith('/hackathons') &&
-    !pathname.includes('/hackathons/new');
+    pathname.includes('/hackathons/') && !pathname.endsWith('/hackathons');
   const getOrgIdFromPath = () => {
     if (pathname.startsWith('/organizations/')) {
       const pathParts = pathname.split('/');
@@ -49,7 +47,6 @@ export default function OrganizationsLayout({
       <NavigationLoadingProvider>
         <OrganizationsLayoutContent
           showOrganizationSidebar={showOrganizationSidebar}
-          showNewHackathonSidebar={showNewHackathonSidebar}
           showNewGrantSidebar={showNewGrantSidebar}
           showHackathonSidebar={showHackathonSidebar}
           initialOrgId={initialOrgId}
@@ -64,14 +61,12 @@ export default function OrganizationsLayout({
 function OrganizationsLayoutContent({
   children,
   showOrganizationSidebar,
-  showNewHackathonSidebar,
   showNewGrantSidebar,
   showHackathonSidebar,
   initialOrgId,
 }: {
   children: React.ReactNode;
   showOrganizationSidebar: boolean;
-  showNewHackathonSidebar: boolean;
   showNewGrantSidebar: boolean;
   showHackathonSidebar: boolean;
   initialOrgId: string | null;
@@ -85,10 +80,8 @@ function OrganizationsLayoutContent({
       {showOrganizationSidebar ? (
         <div className='relative border-t border-t-zinc-800'>
           {showOrganizationSidebar &&
-            !showNewHackathonSidebar &&
             !showNewGrantSidebar &&
             !showHackathonSidebar && <OrganizationSidebar />}
-          {showNewHackathonSidebar && <NewHackathonSidebar />}
           {showHackathonSidebar && (
             <HackathonSidebar organizationId={initialOrgId || undefined} />
           )}

@@ -91,6 +91,11 @@ export interface JudgingResult {
    *  or submissions that didn't pick any track. Used to group results
    *  per-track in the organizer dashboard. */
   trackIds?: string[];
+  /** Advisory recommendation-threshold flags. `recommendedOverall` = top X%
+   *  overall; `recommendedTrackIds` = tracks where this submission is top X%.
+   *  Never selects winners. */
+  recommendedOverall?: boolean;
+  recommendedTrackIds?: string[];
 }
 
 export interface AggregatedJudgingResults {
@@ -237,7 +242,7 @@ export interface CriterionScoreRequest {
 export interface SubmitJudgingScoreRequest {
   submissionId: string;
   criteriaScores: CriterionScoreRequest[];
-  comment?: string; // Optional global feedback
+  notes?: string; // Optional global feedback (per-judge notes on this submission)
 }
 
 export interface OverrideSubmissionScoreRequest {

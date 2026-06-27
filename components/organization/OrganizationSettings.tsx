@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Menu } from 'lucide-react';
 import ResponsiveSidebar from './ResponsiveSidebar';
@@ -30,13 +31,21 @@ export default function OrganizationSettings({
   isCreating = false,
 }: OrganizationSettingsProps) {
   const [modalOpen, setModalOpen] = useState(false);
+  const searchParams = useSearchParams();
+  // Allow deep-linking to a tab, e.g. /organizations/:id/settings?tab=members
+  const allowedTabs = ['profile', 'links', 'members', 'transfer'];
+  const requestedTab = searchParams.get('tab');
+  const initialTab =
+    requestedTab && allowedTabs.includes(requestedTab) && !isCreating
+      ? requestedTab
+      : 'profile';
 
   return (
     <div
       className='flex-1 overflow-hidden bg-black text-white'
       id={organizationId}
     >
-      <Tabs defaultValue='profile' className='w-full'>
+      <Tabs defaultValue={initialTab} className='w-full'>
         <div className='border-b border-zinc-800 px-6 md:px-20'>
           <div className='flex items-center gap-4'>
             {!isCreating && (
@@ -73,7 +82,7 @@ export default function OrganizationSettings({
                         value='members'
                         className='data-[state=active]:border-b-primary rounded-none border-b-2 border-transparent bg-transparent px-0 pt-4 pb-3 text-sm font-medium text-zinc-400 transition-all data-[state=active]:text-white data-[state=active]:shadow-none'
                       >
-                        Members
+                        Members &amp; roles
                       </TabsTrigger>
                       <TabsTrigger
                         value='transfer'
