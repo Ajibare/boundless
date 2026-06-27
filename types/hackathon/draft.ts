@@ -21,7 +21,10 @@ export interface HackathonDraftData {
 
 export interface HackathonDraft {
   id: string;
-  status: 'draft';
+  // The backend returns the real Hackathon status. A draft is normally DRAFT,
+  // but a hackathon mid-publish stays in the drafts list as
+  // DRAFT_AWAITING_FUNDING until its escrow op settles.
+  status: 'DRAFT' | 'DRAFT_AWAITING_FUNDING';
   currentStep: number;
   completedSteps: string[];
   data: HackathonDraftData;

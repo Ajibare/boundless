@@ -104,6 +104,20 @@ const ActivityItem: React.FC<ActivityItemProps> = ({ activity }) => (
         <span className='capitalize'>{activity.source}</span>
         <span>•</span>
         <span>{new Date(activity.occurredAt).toLocaleDateString()}</span>
+        {/* Reward-receipt tx (txHash arrives with backend #335; cast until codegen). */}
+        {(activity as { txHash?: string }).txHash && (
+          <>
+            <span>•</span>
+            <a
+              href={`https://stellar.expert/explorer/testnet/tx/${(activity as { txHash?: string }).txHash}`}
+              target='_blank'
+              rel='noreferrer'
+              className='text-primary hover:underline'
+            >
+              View tx
+            </a>
+          </>
+        )}
       </div>
     </div>
     <div className='text-right'>

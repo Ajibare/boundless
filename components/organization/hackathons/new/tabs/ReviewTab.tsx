@@ -35,6 +35,8 @@ interface ReviewTabProps {
   onPublish?: () => Promise<void>;
   onSaveDraft?: () => Promise<void>;
   isLoading?: boolean;
+  /** Phase-aware label shown on the publish button while loading. */
+  publishStatusLabel?: string;
   isSavingDraft?: boolean;
   organizationId?: string;
   draftId?: string | null;
@@ -46,6 +48,7 @@ export default function ReviewTab({
   onPublish,
   onSaveDraft,
   isLoading = false,
+  publishStatusLabel,
   isSavingDraft = false,
   organizationId,
   draftId,
@@ -117,7 +120,7 @@ export default function ReviewTab({
         })}
       </Accordion>
 
-      {allData.rewards && allData.rewards.prizeTiers.length > 0 && (
+      {allData.rewards && (allData.rewards.prizeTiers?.length ?? 0) > 0 && (
         <EscrowSummary
           rewards={allData.rewards}
           totalPrizePool={totalPrizePool}
@@ -131,6 +134,7 @@ export default function ReviewTab({
       <PublishSection
         walletAddress={walletAddress}
         isLoading={isLoading}
+        statusLabel={publishStatusLabel}
         isSavingDraft={isSavingDraft}
         onPublish={handlePublish}
         onSaveDraft={onSaveDraft ? handleSaveDraft : undefined}

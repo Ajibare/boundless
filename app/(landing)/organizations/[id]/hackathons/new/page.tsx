@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { Suspense } from 'react';
 import NewHackathonTab from '@/components/organization/hackathons/new/NewHackathonTab';
 import Loading from '@/components/Loading';
 import { AuthGuard } from '@/components/auth';
@@ -6,7 +6,9 @@ const page = () => {
   return (
     <AuthGuard redirectTo='/auth?mode=signin' fallback={<Loading />}>
       <div>
-        <NewHackathonTab />
+        <Suspense fallback={<Loading />}>
+          <NewHackathonTab />
+        </Suspense>
       </div>
     </AuthGuard>
   );

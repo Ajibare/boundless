@@ -108,6 +108,14 @@ export const pageMetadata: Record<string, PageMetadata> = {
     ogImage:
       'https://res.cloudinary.com/danuy5rqb/image/upload/v1759143589/bondless-og-image_jufgnu.png',
   },
+  bounties: {
+    title: 'Bounties - Boundless',
+    description:
+      'Discover open bounties on Boundless. Pick up work, ship it, and earn on-chain rewards.',
+    keywords: ['bounties', 'rewards', 'open source', 'earn', 'contribute'],
+    ogImage:
+      'https://res.cloudinary.com/danuy5rqb/image/upload/v1759143589/bondless-og-image_jufgnu.png',
+  },
   hackathons: {
     title: 'Hackathons - Boundless',
     description:

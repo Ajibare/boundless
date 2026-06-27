@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { Suspense } from 'react';
 import NewHackathonTab from '@/components/organization/hackathons/new/NewHackathonTab';
 import { AuthGuard } from '@/components/auth';
 import Loading from '@/components/Loading';
@@ -16,7 +16,9 @@ const DraftPage = async ({ params }: DraftPageProps) => {
   return (
     <AuthGuard redirectTo='/auth?mode=signin' fallback={<Loading />}>
       <div>
-        <NewHackathonTab organizationId={id} draftId={draftId} />
+        <Suspense fallback={<Loading />}>
+          <NewHackathonTab organizationId={id} draftId={draftId} />
+        </Suspense>
       </div>
     </AuthGuard>
   );

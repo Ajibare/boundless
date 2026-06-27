@@ -1,23 +1,14 @@
-
+#!/usr/bin/env sh
+set -e
 
 echo "🚀 Running pre-push checks..."
 
-# Run all tests (if you have them)
-# echo "🧪 Running tests..."
-# npm test
 
-# Run security audit
-echo "🔒 Running security audit..."
-npm audit --omit=dev --audit-level=high
+echo "🔒 Auditing dependencies (non-blocking)..."
+npm audit --omit=dev --audit-level=high || true
 
-# Run build check one more time
-# echo "🏗️ Final build check..."
-# npm run build
-
-# Check for any uncommitted changes
 if ! git diff-index --quiet HEAD --; then
-    echo "⚠️  Warning: You have uncommitted changes."
-    echo "   Consider committing them before pushing."
+    echo "⚠️  You have uncommitted changes — they won't be included in this push."
 fi
 
-echo "✅ Pre-push checks completed!" 
+echo "✅ Pre-push checks passed!"

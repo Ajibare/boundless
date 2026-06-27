@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from 'react';
 import { deleteHackathon } from '@/lib/api/hackathons';
-import { deleteDraft } from '@/lib/api/hackathons/draft';
+import { deleteDraft } from '@/features/hackathons';
 import { useAuthStatus } from '@/hooks/use-auth';
 import { toast } from 'sonner';
 
